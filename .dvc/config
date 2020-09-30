@@ -1,0 +1,4 @@
+[core]
+    remote = myremote
+['remote "myremote"']
+    url = gdrive://1wrKVmAiIe3dY44RzjY2ULYug9O7hIT3V/EpitopeDB
