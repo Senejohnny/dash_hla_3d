@@ -1,7 +1,11 @@
 /hla_3d_venv
-/data
+data/
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
+ 
+# Mac/OSX system
+.DS_Store
