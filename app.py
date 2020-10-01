@@ -13,10 +13,9 @@ from dash_bio_utils import pdb_parser as parser
 import styles_parser as sparser
 
 from analysis_utils import polymorphic_residues, hla_to_filename, find_molecule_path
-from dash_utils import files_data_style
 
 # Load Epitope Database
-ep_path = '/Users/Danial/Repos/dash_hla_3d/data/20200804_EpitopevsHLA_distance.pickle'
+ep_path = os.path.expanduser('./data/20200804_EpitopevsHLA_distance.pickle')
 epitope_db = pd.read_pickle(ep_path)
 
 
@@ -31,7 +30,7 @@ epvshla_donor = {'44RMA': 'B*57:01',
                 '97V': 'B*57:01'} 
 # print({hla:[].append(ep) for ep, hla in epvshla_donor.items()})
 poly_res = polymorphic_residues(set(epvshla_donor.keys()), epitope_db)
-print(poly_res)
+# print(poly_res)
 # Function to create the modelData and style files for molecule visualization
 # hla = set(epvshla_donor.values()) 
 # print(list(hla))
@@ -51,9 +50,9 @@ else:
 
 desa_info = {'chain': 'A',
              'relevant_desa': set([int(_[0]) for _ in poly_res]),
-             'irrelevant_desa': set(),
+             'irrelevant_desa': set([101, 102, 103, 104, 105]),
             }
-
+print(desa_info)
 # Create the cartoon style from the decoded contents
 style = sparser.create_style(pdb_path, style='sphere', mol_color='chain', desa_info=desa_info)
 
@@ -93,4 +92,4 @@ app.layout = html.Div([
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host = '127.0.0.1', port=8080)
+    app.run_server(debug=True, host = '0.0.0.0', port=8080)
