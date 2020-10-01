@@ -20,4 +20,4 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         repository: Senejohnny/dash_hla_3d
         dockerfile: dash_hla_3d/Dockerfile
-        tags: laest
+        tags: dash_3d:latest
