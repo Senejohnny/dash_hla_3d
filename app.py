@@ -14,6 +14,8 @@ import styles_parser as sparser
 
 from analysis_utils import polymorphic_residues, hla_to_filename, find_molecule_path
 
+from pygit2 import Repository
+
 # Load Epitope Database
 ep_path = os.path.expanduser('./data/20200804_EpitopevsHLA_distance.pickle')
 epitope_db = pd.read_pickle(ep_path)
@@ -92,4 +94,8 @@ app.layout = html.Div([
 
 
 if __name__ == '__main__':
-    app.run_server(debug=True, host = '0.0.0.0', port=8080)
+    if Repository('.').head.shorthand == 'master':
+        debug = False
+    else:
+        debug = True
+    app.run_server(debug=debug, host = '0.0.0.0', port=8080)
