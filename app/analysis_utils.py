@@ -18,7 +18,8 @@ def load_data():
     epitope_db = pd.read_pickle(ep_path)
 
     # Load Epitope Database
-    desa_path = '/Users/Danial/UMCUtrecht/ProcessedData/DSAandDESA/20200916_DESA_new_All.pickle'
+    # desa_path = '/Users/Danial/UMCUtrecht/ProcessedData/DSAandDESA/20200916_DESA_new_All.pickle'
+    desa_path = os.path.expanduser('./data/desa_db.pickle')
     desa_db = pd.read_pickle(desa_path)
     return epitope_db, desa_db
 
@@ -123,7 +124,7 @@ def div_3dviewer(hlas:list, hla_ind:int, _3d_data, _hlavsdesa: dict):
         hla = hlas[hla_ind]
         model = json.loads(_3d_data[hla]['model'])
         style =  json.loads(_3d_data[hla]['style'])
-        component = _3d_dashbio(hla, model, style, opacity=0)
+        component = _3d_dashbio(hla, model, style, opacity=0.6)
         # id  = 'mol3d-viewer' + '-' + str(hla_ind + 1)
         return hla, component
     else:
@@ -131,7 +132,7 @@ def div_3dviewer(hlas:list, hla_ind:int, _3d_data, _hlavsdesa: dict):
 
 
 def data_3dviewer(desa_db, epitope_db, TxID:int):
-    """ This function provides the require data to 'div_3dviewer' to generate """
+    """ This function provides the require data consumed by 'div_3dviewer' """
 
     hlavsdesa = hlavsdesa_donor(desa_db, TxID)
     _hlavsdesa = {key:polymorphic_residues(value, epitope_db) for key, value in hlavsdesa.items()}
