@@ -1,0 +1,65 @@
+#mol3d-viewer-1 {
+    display: inline-block;
+    width: calc(67% - 500px);
+    height: calc(30% - 400px);
+    background-color: white;
+    align-self: center;
+    align-content: left;
+    float: left;
+    margin-top: 10px;
+}
+
+#mol3d-viewer-2 {
+    display: inline-block;
+    width: calc(67% - 500px);
+    /* align-items: center; */
+    align-self: center;
+    align-content: center;
+    background-color: white;
+    float: left;
+    margin-top: 10px;
+}
+
+#mol3d-viewer-3 {
+    display: inline-block;
+    width: calc(67% - 500px);
+    /* align-items: center; */
+    align-self: right;
+    align-content: left;
+    background-color: white;
+    float: left;
+    margin-top: 10px;
+}
+
+#mol3d-viewer-4 {
+    display: inline-block;
+    width: calc(67% - 500px);
+    align-items: center;
+    align-items: right;
+    align-self: right;
+    align-content: left;
+    background-color: white;
+    float: left;
+    margin-top: 10px;
+}
+
+#mol3d-viewer-5 {
+    display: inline-block;
+    width: calc(67% - 500px);
+    align-items: center;
+    align-self: right;
+    align-content: left;
+    background-color: white;
+    float: left;
+    margin-top: 10px;
+}
+#mol3d-viewer-6 {
+    display: inline-block;
+    width: calc(67% - 500px);
+    align-items: center;
+    align-self: right;
+    align-content: left;
+    background-color: white;
+    float: left;
+    margin-top: 10px;
+}

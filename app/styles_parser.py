@@ -1,7 +1,8 @@
 """Styles parser
-This module contains functions that can specify the style of a
+This module contains the functions that can specify the style of a
 molecule that is rendered using the Molecule3dViewer component in Dash
-Bio."""
+Bio.
+Modified October 2020 by Danial Senejohnny, d.senejohnny@gmail.com """
 
 import json
 
@@ -168,8 +169,8 @@ def create_style(
     data = {}
     # desa color
     desa_color = {
-        'red': '#FFA500',
         'yellow': '#FFFF00',
+        'orange': '#FFA500',
     }
 
     # Variables that store the character positions of different
@@ -244,12 +245,12 @@ def create_style(
                 # print(desa_info['relevant_desa'])
                 if int(res_indx) in desa_info['relevant_desa']:
                     data[index] = {
-                            "color": desa_color['red'],
+                            "color": desa_color['yellow'],
                             "visualization_type": style
                         }
                 elif int(res_indx) in desa_info['irrelevant_desa']:
                     data[index] = {
-                            "color": desa_color['yellow'],
+                            "color": desa_color['orange'],
                             "visualization_type": style
                         }
         else:
