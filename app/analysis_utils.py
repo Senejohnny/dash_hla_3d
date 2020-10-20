@@ -13,15 +13,22 @@ import dash_bio as dashbio
 def load_data():
     """ This function loads DESA and EpitopeDB data frames"""
 
-    # Load Epitope Database
+    return load_epitope_db(), load_desa_db()
+
+def load_desa_db():
+    """ This function loads DESA data frame"""
+
+    desa_path = os.path.expanduser('./data/desa_3d_view.pickle')
+    desa_db = pd.read_pickle(desa_path)
+    return desa_db
+
+def load_epitope_db():
+    """ This function loads EpitopeDB data frame"""
+
     ep_path = os.path.expanduser('./data/20200804_EpitopevsHLA_distance.pickle')
     epitope_db = pd.read_pickle(ep_path)
+    return epitope_db
 
-    # Load Epitope Database
-    # desa_path = '/Users/Danial/UMCUtrecht/ProcessedData/DSAandDESA/20200916_DESA_new_All.pickle'
-    desa_path = os.path.expanduser('./data/desa_db.pickle')
-    desa_db = pd.read_pickle(desa_path)
-    return epitope_db, desa_db
 
 def polymorphic_residues(epitope_set:set, epitope_db) -> set:
     """ Find the aminoacide sequence of each epitope """
@@ -58,8 +65,10 @@ def get_hla_locus(hla:str) -> str:
 def hlavsdesa_donor(desa_db:pd.DataFrame, TxID:int) -> dict:
     """ This function receives the Tx and desa database and returns HLA vs DESA """
 
-    desa_3d_view = desa_db[desa_db.TransplantID == TxID]
-    desavshla = desa_3d_view.EpvsHLA_Donor.values[0]
+    desa_3d_view_db = desa_db[desa_db.TransplantID == TxID]
+    if desa_3d_view_db.shape[0] == 0:
+        raise ValueError(f'Transplant ID {TxID} does not exist in the datat set')
+    desavshla = desa_3d_view_db.EpvsHLA_Donor.values[0]
     hlavsdesa = defaultdict(list)
     for key, value in desavshla.items():
         hlavsdesa[value].append(key)
@@ -78,7 +87,7 @@ def get_hla_polychain(hla:str)-> str:
                 'DRB': 'B', 'DQA': 'A', 'DQB':'B'}
     return polychain.get(get_hla_locus(hla), 'hla is invalid')
 
-def _3dview_data_preparation(hlavsdesa:dict)-> Dict:
+def _3dview_data_preparation(hlavsdesa:dict, style)-> Dict:
     """ Data Preparation (model & style) for the 3d viewer """
 
     _3d_models_data = defaultdict()
@@ -93,20 +102,20 @@ def _3dview_data_preparation(hlavsdesa:dict)-> Dict:
         # print(pdb_path)
         # Create the model data from the pdb files 
         if pdb_exist:
-            model = parser.create_data(pdb_path)
+            model_data = parser.create_data(pdb_path)
         else:
             print(f'{hla}:{pdb_path}: IOError: No such file or directory')
+            continue
         # Create the cartoon style from the decoded contents
-        style = sparser.create_style(pdb_path, style='sphere', mol_color='chain', desa_info=desa_info)
-        _3d_models_data[hla] = {'model':model, 'style':style}
+        style_data = sparser.create_style(pdb_path, style, mol_color='chain', desa_info=desa_info)
+        _3d_models_data[hla] = {'model':model_data, 'style':style_data}
     return _3d_models_data
 
 
-def _3d_dashbio(id:str, model, style, opacity=0):
+def _3d_dashbio(model, style, opacity=0):
     """ Dashbio output """
 
     return dashbio.Molecule3dViewer(
-                                    id=id,
                                     selectionType='atom',
                                     modelData=model,
                                     styles=style,
@@ -116,26 +125,37 @@ def _3d_dashbio(id:str, model, style, opacity=0):
                                     )
 
 
-def div_3dviewer(hlas:list, hla_ind:int, _3d_data, _hlavsdesa: dict):
+# def div_3dviewer(hlas:list, hla_ind:int, _3d_data, _hlavsdesa: dict):
+#     """ This function returns the hla name and 3d structure components 
+#         that are needed by dash component for visualisztion  """
+
+#     if hla_ind < len(hlas):
+#         hla = hlas[hla_ind]
+#         model_data = json.loads(_3d_data[hla]['model'])
+#         style_data =  json.loads(_3d_data[hla]['style'])
+#         component = _3d_dashbio(hla, model_data, style_data, opacity=0.6)
+#         # id  = 'mol3d-viewer' + '-' + str(hla_ind + 1)
+#         return hla, component
+#     else:
+#         return hla_ind + 1, None
+
+def div_3dviewer(hla:str, _3d_data):
     """ This function returns the hla name and 3d structure components 
-        that are needed by dash component for visualisztion  """
-
-    if hla_ind < len(hlas):
-        hla = hlas[hla_ind]
-        model = json.loads(_3d_data[hla]['model'])
-        style =  json.loads(_3d_data[hla]['style'])
-        component = _3d_dashbio(hla, model, style, opacity=0.6)
-        # id  = 'mol3d-viewer' + '-' + str(hla_ind + 1)
-        return hla, component
-    else:
-        return hla_ind + 1, None
+        that are needed by dash component for visualisztion  
+        _hlavsdesa: dict can added later for testing 
+        """
+    
+    model_data = json.loads(_3d_data[hla]['model'])
+    style_data = json.loads(_3d_data[hla]['style'])
+    component = _3d_dashbio(model_data, style_data, opacity=0.6)
+    return component
 
 
-def data_3dviewer(desa_db, epitope_db, TxID:int):
+def data_3dviewer(desa_db, epitope_db, TxID:int, style:str='sphere'):
     """ This function provides the require data consumed by 'div_3dviewer' """
 
     hlavsdesa = hlavsdesa_donor(desa_db, TxID)
     _hlavsdesa = {key:polymorphic_residues(value, epitope_db) for key, value in hlavsdesa.items()}
-    _3d_data = _3dview_data_preparation(hlavsdesa)
+    _3d_data = _3dview_data_preparation(hlavsdesa, style)
     hlas = list(hlavsdesa.keys())
     return hlas, _3d_data, _hlavsdesa, hlavsdesa

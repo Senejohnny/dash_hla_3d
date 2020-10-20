@@ -39,7 +39,7 @@ def upload_file(Data_Type:str, id:str = ''):
 #####################################################################################
 # Parse Uploaded file
 #####################################################################################
-def parse_contents(contents, filename, Data_type:str):
+def parse_contents(contents, filename, Data_type:str)-> pd.DataFrame: # the df output will not be stored so no json format.  
 
     if '.' not in filename:
         return html.Div(f"""Error: filename {filename} does not contain extension. Make sure filename contains
@@ -58,21 +58,18 @@ def parse_contents(contents, filename, Data_type:str):
         elif filename.rsplit('.', 1)[1].lower() in ['xls', 'xlsx']:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))     #BytesIO is an in-memory stream for text I/O
+        elif filename.rsplit('.', 1)[1].lower() in ['pkl', 'pickle']:
+            # Assume that the user uploaded an pickle file
+            df = pd.read_pickle(io.BytesIO(decoded))     #BytesIO is an in-memory stream for text I/O
+            print(df)
     except Exception as e:
         print(e)
         return no_update, html.Div(["""
                                 There was an error processing this file. 
                                 File extension might not supported. 
-                                Supported file extensions .csv, .xls, .xlsx
+                                Supported file extensions .csv, .xls, .xlsx, .pickle
                                 """])
-    return df.to_json(orient='split'), html.Div([
-                            html.Div([
-                                f"""
-                                {Data_type} data is successfully uploaded as {filename} !
-                                """
-                            ]),
-                            html.Label('--' * 40),  # horizontal line
-                        ])
+    return df, html.Div(html.P(f'{Data_type} data is successfully uploaded as {filename}!'))
 
 
 def detectdelimiter(file): 
