@@ -169,17 +169,17 @@ def create_style(
     data = {}
     # desa color
     desa_color = {
-        'yellow': '#FFFF00',
-        'orange': '#FFA500',
+        'desa': '#FFFF00', # Yellow
+        'desa_rAb': '#FFA500', # Orange
     }
 
     # Variables that store the character positions of different
     # parameters from the molecule PDB file
     pos = {
-        'chain': [21, 22],
-        'atm_type': [77, 78],
         'res_name': [17, 20],
+        'chain': [21, 22],
         'res_indx': [23, 26],
+        'atm_type': [77, 78],
     }
 
     for l in lines:
@@ -206,7 +206,6 @@ def create_style(
         atm_types.append(atm_type)
         res_names.append(res_name)
         res_indxs.append(res_indx)
-        # print(res_indxs)
         index = len(chains) - 1
 
         if line[0] == "ATOM":
@@ -243,14 +242,14 @@ def create_style(
                 # print(chain, res_indx, type(res_indx), int(res_indx))
                 # print(int(res_indx), desa_info['relevant_desa'], int(res_indx) in desa_info['relevant_desa'])
                 # print(desa_info['relevant_desa'])
-                if int(res_indx) in desa_info['relevant_desa']:
+                if int(res_indx) in desa_info['desa']:
                     data[index] = {
-                            "color": desa_color['yellow'],
+                            "color": desa_color['desa'],
                             "visualization_type": style
                         }
-                elif int(res_indx) in desa_info['irrelevant_desa']:
+                if int(res_indx) in desa_info['desa_rAb']: # we put if to recolor the epitopes in the former step
                     data[index] = {
-                            "color": desa_color['orange'],
+                            "color": desa_color['desa_rAb'],
                             "visualization_type": style
                         }
         else:

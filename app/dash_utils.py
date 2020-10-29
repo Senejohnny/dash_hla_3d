@@ -10,6 +10,57 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 
+def filtering_logic(df, sort_failure, sort_class, hla):
+    """ This function wraps all the logic pertain to
+    filtering the table """
+
+    if sort_failure:
+        if sort_failure == 'desa':  
+            df = df.sort_values(by='#DESA', ascending=False)
+
+        if sort_failure == 'early_failure': 
+            ind_T_early = df['Survival[Y]'].apply(lambda x: x < 1/4)
+            ind_E_early = df['Failure'].apply(lambda x: x == 1)
+            df = df[ind_T_early & ind_E_early]
+        print(sort_failure)
+        if sort_failure == 'late_surviving': 
+            ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10)
+            ind_E_late = df['Failure'].apply(lambda x: x == 0 | x == 2)
+            df = df[ind_T_late & ind_E_late]
+    if sort_class:
+        ind = df['Donor_HLA_Class'].apply(lambda x: x == {'I':'I', 'II': 'II', 'III': 'I,II'}.get(sort_class))
+        df = df[ind]
+
+    if hla:
+        ind = df['Donor_HLA'].apply(lambda x: hla in x)
+        df = df[ind]
+
+    return df
+
+def dashtable_data_compatibility(df):
+    """ This function helps to make the data compatible to dash table
+    by turning all unstructured values into a string """
+
+    df['Survival[Y]'] = df['Survival[Y]'].apply(lambda x: round(x,3))
+    df['DESA->Donor_HLA'] = df['DESA->Donor_HLA'].apply(lambda x: str(dict(x)))
+    df['Donor_HLA'] = df['Donor_HLA'].apply(lambda x: str(x)) 
+    df['Donor_HLA_Class'] = df['Donor_HLA_Class'].apply(lambda x: str(x))
+    return df[['TransplantID', 'Status', '#DESA', 'Failure', 'Survival[Y]', 'Donor_HLA', 'Donor_HLA_Class']]
+
+def logo_img():
+    """ This function provides the dash logo component """
+    return html.Img(
+                src="assets/logo.svg",
+                className ="logo-header",
+                style={
+                    'height': '12%',
+                    'width': '12%', 
+                    'float': 'right',
+                    'position': 'relative',
+                    'padding-top': 2, 
+                    'padding-right': 4,
+                }
+            )
 
 #####################################################################################
 # File Upload

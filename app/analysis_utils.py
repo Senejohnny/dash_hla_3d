@@ -10,6 +10,10 @@ from app import styles_parser as sparser
 from dash_bio_utils import pdb_parser as parser
 import dash_bio as dashbio
 
+
+###################################################################
+# Auxiliary functions for analysis
+###################################################################
 def load_data():
     """ This function loads DESA and EpitopeDB data frames"""
 
@@ -25,19 +29,32 @@ def load_desa_db():
 def load_epitope_db():
     """ This function loads EpitopeDB data frame"""
 
-    ep_path = os.path.expanduser('./data/20200804_EpitopevsHLA_distance.pickle')
+    ep_path = os.path.expanduser('./data/20201027_EpitopevsHLA_distance.pickle')
     epitope_db = pd.read_pickle(ep_path)
     return epitope_db
 
+def flatten2list(object):
+    """ This function flattens objects in a nested structure """
+    gather = []
+    for item in object:
+        if isinstance(item, (list, set)):
+            gather.extend(flatten2list(item))            
+        else:
+            gather.append(item)
+    return gather
+
+###################################################################
+# Main functions for analysis
+###################################################################
 
 def polymorphic_residues(epitope_set:set, epitope_db) -> set:
     """ Find the aminoacide sequence of each epitope """
     ind = epitope_db.Epitope.apply(lambda x: x in epitope_set)
     poly_residues = epitope_db[ind].PolymorphicResidues.values
-    return [__ for _ in poly_residues for __ in _]
+    return flatten2list(poly_residues)
     
 def hla_to_filename(hla:str):
-    """ Translates the hla to the pertinant .pdb file name in the repo"""
+    """ Translates the hla to the pertinant .pdb file name in the repo """
     locus, specificity = hla.split('*')
     filename = '_'.join([locus, *specificity.split(':')]) + '_V1.pdb'
     return re.split('\d', locus)[0], filename
@@ -62,16 +79,35 @@ def get_hla_locus(hla:str) -> str:
     return hla[:star_location]
 
 
-def hlavsdesa_donor(desa_db:pd.DataFrame, TxID:int) -> dict:
-    """ This function receives the Tx and desa database and returns HLA vs DESA """
+def hlavsdesa_donor(epitope_db, desa_db:pd.DataFrame, TxID:int, rAb) -> dict:
+    """ This function receives the Tx and desa database and returns HLA vs DESA 
+    the output of this function is a nested dictionary. The underscore keys 
+    are needed for style parser analysis, while the other keys are useful for presentation
+    {
+        hla:{   desa: list of values,
+                _desa: list of values,
+                desa_rAb: list of tuples
+                _desa_rAb: list of tuples
+            }
+    }
+    """
 
     desa_3d_view_db = desa_db[desa_db.TransplantID == TxID]
     if desa_3d_view_db.shape[0] == 0:
         raise ValueError(f'Transplant ID {TxID} does not exist in the datat set')
     desavshla = desa_3d_view_db.EpvsHLA_Donor.values[0]
-    hlavsdesa = defaultdict(list)
-    for key, value in desavshla.items():
-        hlavsdesa[value].append(key)
+    hlavsdesa = defaultdict(lambda: defaultdict(list))
+    for desa, hla in desavshla.items():
+        hlavsdesa[hla]['desa'].append(desa)
+        hlavsdesa[hla]['_desa'].extend(polymorphic_residues(desa, epitope_db))
+        if rAb:
+            try:
+                if epitope_db[epitope_db.Epitope == desa]['AntibodyReactivity'].values[0] == 'Yes':
+                    hlavsdesa[hla]['desa_rAb'].append(desa)
+                    hlavsdesa[hla]['_desa_rAb'].extend(polymorphic_residues(desa, epitope_db))
+            except IndexError:
+                hlavsdesa[hla]['desa_rAb'] = []
+                hlavsdesa[hla]['_desa_rAb'] = []
     return hlavsdesa
 
 def get_hla_locus(hla:str) -> str:
@@ -81,25 +117,27 @@ def get_hla_locus(hla:str) -> str:
     return gene if len(gene) == 1 else gene[0:3]
     
 def get_hla_polychain(hla:str)-> str:
-    """ get the ploymorphic chain of hla """
+    """ get the ploymorphic chain of hla locus """
 
     polychain =  {'A': 'A', 'B': 'A', 'C': 'A',
                 'DRB': 'B', 'DQA': 'A', 'DQB':'B'}
     return polychain.get(get_hla_locus(hla), 'hla is invalid')
 
-def _3dview_data_preparation(hlavsdesa:dict, style)-> Dict:
+def _3dview_data_preparation(hlavsdesa:dict, style, rAb)-> Dict:
     """ Data Preparation (model & style) for the 3d viewer """
 
     _3d_models_data = defaultdict()
+    print(dict(hlavsdesa))
     for hla in hlavsdesa.keys():
-        desa_info = {'chain': get_hla_polychain(hla),
-        'relevant_desa': set([int(_[0]) for _ in hlavsdesa.get(hla)]),
-        'irrelevant_desa': set(),
+        desa_info = {
+            'chain': get_hla_polychain(hla),
+            'desa': set([int(_[0]) for _ in hlavsdesa[hla]['_desa'] ]),
+            'desa_rAb': set([int(_[0]) for _ in hlavsdesa[hla]['_desa_rAb'] ])
         }
 
+        print('desa_info', desa_info)
         locus, filename = hla_to_filename(hla)
         pdb_exist, pdb_path = find_molecule_path(locus, filename)
-        # print(pdb_path)
         # Create the model data from the pdb files 
         if pdb_exist:
             model_data = parser.create_data(pdb_path)
@@ -125,20 +163,6 @@ def _3d_dashbio(model, style, opacity=0):
                                     )
 
 
-# def div_3dviewer(hlas:list, hla_ind:int, _3d_data, _hlavsdesa: dict):
-#     """ This function returns the hla name and 3d structure components 
-#         that are needed by dash component for visualisztion  """
-
-#     if hla_ind < len(hlas):
-#         hla = hlas[hla_ind]
-#         model_data = json.loads(_3d_data[hla]['model'])
-#         style_data =  json.loads(_3d_data[hla]['style'])
-#         component = _3d_dashbio(hla, model_data, style_data, opacity=0.6)
-#         # id  = 'mol3d-viewer' + '-' + str(hla_ind + 1)
-#         return hla, component
-#     else:
-#         return hla_ind + 1, None
-
 def div_3dviewer(hla:str, _3d_data):
     """ This function returns the hla name and 3d structure components 
         that are needed by dash component for visualisztion  
@@ -151,11 +175,11 @@ def div_3dviewer(hla:str, _3d_data):
     return component
 
 
-def data_3dviewer(desa_db, epitope_db, TxID:int, style:str='sphere'):
+def data_3dviewer(desa_db, epitope_db, TxID:int, style:str='sphere', rAb=False):
     """ This function provides the require data consumed by 'div_3dviewer' """
 
-    hlavsdesa = hlavsdesa_donor(desa_db, TxID)
-    _hlavsdesa = {key:polymorphic_residues(value, epitope_db) for key, value in hlavsdesa.items()}
-    _3d_data = _3dview_data_preparation(hlavsdesa, style)
-    hlas = list(hlavsdesa.keys())
-    return hlas, _3d_data, _hlavsdesa, hlavsdesa
+    hlavsdesa = hlavsdesa_donor(epitope_db, desa_db, TxID, rAb)
+    # _hlavsdesa = {hla:{key:polymorphic_residues(value, epitope_db)} for hla, val_dict in hlavsdesa.items() for key, value in val_dict.items()}
+    # print(_hlavsdesa )
+    _3d_data = _3dview_data_preparation(hlavsdesa, style, rAb)
+    return _3d_data, hlavsdesa

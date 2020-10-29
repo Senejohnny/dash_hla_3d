@@ -9,15 +9,17 @@ import six.moves.urllib.request as urlreq
 
 import dash
 from dash import no_update
+import dash_daq as daq
+import dash_table
+import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 
-import dash_daq as daq
-import dash_table
+
 from app.analysis_utils import load_desa_db, data_3dviewer, div_3dviewer, load_epitope_db
 
-from app.dash_utils import parse_contents, upload_file
+from app.dash_utils import filtering_logic, logo_img, dashtable_data_compatibility
 from pygit2 import Repository
 
 
@@ -29,58 +31,8 @@ app.config['suppress_callback_exceptions'] = True
 #     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
 # })
 
-# epitope_db, desa_db = load_data()
-
-# desa_db = desa_db[desa_db.Status=='DESA']
-# Tx = 4606
 
 
-
-def data_to_str(df):
-    df['Survival[Y]'] = df['Survival[Y]'].apply(lambda x: round(x,3))
-    df['DESA->Donor_HLA'] = df['DESA->Donor_HLA'].apply(lambda x: str(dict(x)))
-    df['Donor_HLA'] = df['Donor_HLA'].apply(lambda x: str(x)) 
-    df['Donor_HLA_Class'] = df['Donor_HLA_Class'].apply(lambda x: str(x))
-    return df[['TransplantID', 'Status', '#DESA', 'Failure', 'Survival[Y]', 'Donor_HLA', 'Donor_HLA_Class']]
-
-def filtering_logic(df, sort_failure, sort_class, hla):
-    if sort_failure:
-        if sort_failure == 'desa':  
-            df = df.sort_values(by='#DESA', ascending=False)
-
-        if sort_failure == 'early_failure': 
-            ind_T_early = df['Survival[Y]'].apply(lambda x: x < 1/4)
-            ind_E_early = df['Failure'].apply(lambda x: x == 1)
-            df = df[ind_T_early & ind_E_early]
-        print(sort_failure)
-        if sort_failure == 'late_surviving': 
-            ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10)
-            ind_E_late = df['Failure'].apply(lambda x: x == 0 | x == 2)
-            df = df[ind_T_late & ind_E_late]
-    if sort_class:
-        ind = df['Donor_HLA_Class'].apply(lambda x: x == {'I':'I', 'II': 'II', 'III': 'I,II'}.get(sort_class))
-        df = df[ind]
-
-    if hla:
-        ind = df['Donor_HLA'].apply(lambda x: hla in x)
-        df = df[ind]
-
-    return df
-
-
-def logo_img():
-    return html.Img(
-                src="assets/logo.svg",
-                className ="logo-header",
-                style={
-                    'height': '12%',
-                    'width': '12%', 
-                    'float': 'right',
-                    'position': 'relative',
-                    'padding-top': 2, 
-                    'padding-right': 4,
-                }
-            )
 
 # ######################################################################
 # App Layout
@@ -113,8 +65,8 @@ app.layout = html.Div([
                                 dcc.Tab(label='3D View', value='tab-1-3'),
                         ], className="four columns"),
                         html.Div(id='tabs-children-content')
-                    ]),
-                    html.Div(id='table',
+                    ], style={'padding': 0 }),
+                    html.Div(id='tx-table',
                             children=[],
                             className="eight columns"),
             ]), 
@@ -176,7 +128,7 @@ app.layout = html.Div([
 #                         html.Div(id='output-desa-upload'),
 #                     ]),
 #                 ], className="four columns"),
-
+# table_layout = 
 tab_2_layout = html.Div([
                         html.H3('Loading & Filtering:'),
                         html.Div([
@@ -212,9 +164,17 @@ tab_2_layout = html.Div([
                         html.H6('HLA Molecule'),
                         html.Div(dcc.Input(id='input_hla', type='text', placeholder="HLA")),
                     ]),
-                ], className="four columns"),
+                ], className="four columns", style={'padding': 10}),
 
 tab_3_layout = html.Div([
+                    html.Div([
+                            daq.BooleanSwitch(
+                                id='rAb-switch',
+                                on=False,
+                                label="Monoclonal Antobodies",
+                                labelPosition="top",
+                            ),
+                    ], style={'padding': 10}),
                     html.Div([
                         html.H6('Transplant ID'),
                         html.Div(dcc.Input(id='input-tx', type='text', placeholder="Tx ID")),
@@ -228,10 +188,12 @@ tab_3_layout = html.Div([
                                 ],
                                 placeholder="Select HLA Class",
                         ),
-                        html.Button('Show', id='submit-tx-show', n_clicks=0),
-                    ])
+                        html.Div(
+                            html.Button('Show', id='submit-tx-show', n_clicks=0),
+                        style={'padding': 10})
+                    ], style={'padding': 10})
                 ], 
-                className="four columns")
+                className="four columns",)
 
 
                 
@@ -252,7 +214,7 @@ def render_content(tab):
             "Data" tab. A sample structure is also available to download. In the "View" tab, you can change 
             the style and coloring of the various components of your molecule.
             """)
-        ], className="four columns")
+        ], className="four columns", style={'padding': 10})
     elif tab == 'tab-1-2':
         return tab_2_layout
     elif tab == 'tab-1-3':
@@ -260,7 +222,7 @@ def render_content(tab):
 
 
 
-@app.callback(Output('table', 'children'),
+@app.callback(Output('tx-table', 'children'),
               [Input('show-table','n_clicks'),],
               [State('dropdown_sortby', 'value'),
                State('dropdown_class', 'value'),
@@ -271,7 +233,7 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla):
     else:
         desa_db = load_desa_db()
         desa_db = filtering_logic(desa_db, sort_failure, sort_class, hla)
-        df_print = data_to_str(desa_db)
+        df_print = dashtable_data_compatibility(desa_db)
         return dash_table.DataTable(
                                 columns=[{"name": i, "id": i} for i in df_print.columns],   
                                 data=df_print.to_dict('records'),
@@ -297,82 +259,40 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla):
                                             }
                         )         
 
-# @app.callback([Output('output-desa-upload', 'children'),
-#                Output('hidden-df', 'children'),
-#                Output('table', 'children'),],
-#               [Input('upload-desa-data', 'contents')],
-#             #    Input('submit-filter-data','n_clicks'),],
-#               [State('upload-desa-data', 'filename'),
-#             #    State('dropdown_sortby', 'value'),
-#             #    State('dropdown_class', 'value'),
-#             #    State('input_hla', 'value')           
-#                ])
-# def update_output_data(contents, filename):
-#     if contents is None:
-#         return html.Div(['No desa DB is uploaded']), no_update, no_update 
-#     else:
-#         df, message = parse_contents(contents, filename, 'Transplants with DESA')
-#         # Any filtering should be before as data_eng stringify values
-#         df_eng = data_eng(df)
-#         return message, df.to_json(orient='split', date_format='iso'), \
-#             dash_table.DataTable(
-#                                 columns=[{"name": i, "id": i} for i in df_eng.columns],   
-#                                 data=df_eng.to_dict('records'),
-#                                 page_size= 20,
-#                                 editable=True,
-#                                 style_table={'height': '400px', 
-#                                              'overflowY': 'auto'},
-#                                 style_cell_conditional=[
-#                                                         {
-#                                                             'if': {'column_id': c},
-#                                                             'textAlign': 'left'
-#                                                         } for c in ['Date', 'Region']
-#                                                     ],
-#                                 style_data_conditional=[
-#                                                         {
-#                                                             'if': {'row_index': 'odd'},
-#                                                             'backgroundColor': 'rgb(248, 248, 248)'
-#                                                         }
-#                                                     ],
-#                                 style_header={
-#                                                 'backgroundColor': 'rgb(230, 230, 230)',
-#                                                 'fontWeight': 'bold'
-#                                             }
-#                         )
 
-
-
-
-# @app.callback([Output('hidden-data', 'children'),],
-#               [Input('submit-filter-data','n_clicks'),],
-#               [State('dropdown_sortby', 'value'),
-#                State('dropdown_class', 'value'),
-#                State('input_hla', 'value')           
-#                ])
-# def update_output_data(n_clicks, sort_failure, sort_class, hla):
-#     if n_clicks:
-#         desa_db = load_desa_db()
-#         desa_db = filtering_logic(desa_db, sort_failure, sort_class, hla)
-#         return desa_db.to_json(date_format='iso', orient='split')
-#     else:
-#         return no_update
-
-
-    
 @app.callback(Output('3d-view-loading', 'children'),
               Input('submit-tx-show','n_clicks'),
               [State('input-tx', 'value'),
-               State('dropdown_style', 'value')])
-def show_3d_tx(n_clicks, TxID, style):
+               State('dropdown_style', 'value'),
+               State('rAb-switch', 'on')])
+def show_3d_tx(n_clicks, TxID, style, rAb_switch):
     if n_clicks:
         desa_df = load_desa_db()
         epitope_db = load_epitope_db()
-        hlas, _3d_data, _hlavsdesa, hlavsdesa = data_3dviewer(desa_df, epitope_db, int(TxID), style=style)
-        return [html.Div(
-                    children=[
-                        html.H5(f'HLA: {hla}'),
-                        div_3dviewer(hla, _3d_data)], 
-                        className="four columns") for hla in hlas]
+        _3d_data, hlavsdesa = data_3dviewer(desa_df, epitope_db, int(TxID), style=style, rAb=rAb_switch)
+        return [html.Div([
+                    html.H4(f'Transplant ID: {TxID}'),
+                    html.Div([
+                        html.Div([
+                            html.Div([
+                                html.H6([
+                                        html.Span(f'HLA: {hla}',
+                                            id=f"tooltip-target-{i}",
+                                            style={"textDecoration": "underline", "cursor": "pointer"},
+                                        )
+                                ]),
+                                dbc.Tooltip(
+                                    f"DESA #{len(hlavsdesa[hla]['desa'])}: {hlavsdesa[hla]['desa']}",
+                                    # "DESA rAb: {hlavsdesa[hla].get('desa_rAb')}"
+                                    target=f"tooltip-target-{i}",
+                                    placement='top'
+                                )
+                            ]),
+                            div_3dviewer(hla, _3d_data)], 
+                            className="four columns") for i, hla in enumerate(hlavsdesa.keys())
+                        ])
+                    ])
+                ]
     else:
         return 'No Transplant ID is selected for visualisation'
 
@@ -384,3 +304,5 @@ if __name__ == '__main__':
     else:
         debug = True
     app.run_server(debug=debug, host = '0.0.0.0', port=8080)
+
+# Error 1272
