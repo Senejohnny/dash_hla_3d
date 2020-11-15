@@ -45,23 +45,25 @@ def dashtable_data_compatibility(df):
     df['DESA->Donor_HLA'] = df['DESA->Donor_HLA'].apply(lambda x: str(dict(x)))
     df['Donor_HLA'] = df['Donor_HLA'].apply(lambda x: str(x)) 
     df['Donor_HLA_Class'] = df['Donor_HLA_Class'].apply(lambda x: str(x))
-    return df[['TransplantID', 'Status', '#DESA', 'Failure', 'Survival[Y]', 'Donor_HLA', 'Donor_HLA_Class']]
+    return df[['TransplantID', '#DESA', 'Failure', 'Survival[Y]', 'Donor_HLA', 'Donor_HLA_Class']]
 
-def logo_img():
-    """ This function provides the dash logo component """
-    return html.Img(
+def Header(name):
+    title = html.H1(name, style={"margin-top": 5})
+    logo = html.Img(
                 src="assets/logo.svg",
-                className ="logo-header",
                 style={
-                    'height': '12%',
-                    'width': '12%', 
-                    'float': 'right',
-                    'position': 'relative',
-                    'padding-top': 2, 
-                    'padding-right': 4,
+                        "float": "right", 
+                        "height": 60,
+                        'float': 'right',
+                        'position': 'relative',
+                        'padding-top': 4, 
+                        'padding-right': 4,
                 }
             )
+    link = html.A(logo, href="https://plotly.com/dash/")
 
+    return dbc.Row([dbc.Col(title, md=8), dbc.Col(link, md=4)])
+    
 #####################################################################################
 # File Upload
 #####################################################################################

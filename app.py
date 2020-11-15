@@ -19,12 +19,12 @@ from dash.dependencies import Input, Output, State
 
 from app.analysis_utils import load_desa_db, data_3dviewer, div_3dviewer, load_epitope_db
 
-from app.dash_utils import filtering_logic, logo_img, dashtable_data_compatibility
+from app.dash_utils import filtering_logic, Header, dashtable_data_compatibility
 from pygit2 import Repository
 
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, title='HLA 3D Viewer', external_stylesheets=external_stylesheets)
+app = dash.Dash(__name__, title='HLA3D Epitopes', external_stylesheets=[dbc.themes.CERULEAN])
 app.config['suppress_callback_exceptions'] = True
 
 # app.css.append_css({
@@ -34,44 +34,32 @@ app.config['suppress_callback_exceptions'] = True
 
 
 
+
 # ######################################################################
 # App Layout
 # ######################################################################
-app.layout = html.Div([
-    html.Div([
-        html.Div(
-            html.Div(
-                children=[
-                html.H2('HLA 3D Viewer: V 0.0.3'),
-            ]),
-            className ="nine columns",
-        ),
-        html.Div(
-            logo_img()
-        )
-    ], className="row"),
-    html.Div([
-        dcc.Tabs(id='tabs-mother', value='tab-1', children=[
-            dcc.Tab(
+app.layout = dbc.Container([
+    Header('HLA3D Epitopes'),
+    html.Hr(),
+    dbc.Row([
+        dbc.Col(dbc.Tabs(id='tabs-mother', children=[
+            dbc.Tab(
                 label='Transplants',
-                className='control-upload',
-                value='tab-1',
-                children=[
-                    html.Div([
-                        dcc.Tabs(id='tabs-children', value='tab-1-1', 
+                children=dbc.Row([
+                    dbc.Col([
+                        dbc.Tabs(id='tabs-children', 
                             children=[
-                                dcc.Tab(label='About', value='tab-1-1'),
-                                dcc.Tab(label='Data', value='tab-1-2'),
-                                dcc.Tab(label='3D View', value='tab-1-3'),
-                        ], className="four columns"),
+                                dbc.Tab(label='About', tab_id='tab-1-1'),
+                                dbc.Tab(label='Data', tab_id='tab-1-2'),
+                        ]),
                         html.Div(id='tabs-children-content')
-                    ], style={'padding': 0 }),
-                    html.Div(id='tx-table',
+                    ], width={"size": 4, "order": 1, "offset": 0}),
+                    dbc.Col(id='tx-table',
                             children=[],
-                            className="eight columns"),
-            ]), 
-            dcc.Tab(label='3D View', 
-                    value='tab-2',
+                            width={"size": 8, "order": 2, "offset": 0}
+                    ),
+            ])), 
+            dbc.Tab(label='HLA 3D View', 
                     children=html.Div([
                         html.H5('HLA Molecule 3D View'),
                         html.Div(f'''
@@ -83,119 +71,153 @@ app.layout = html.Div([
                         )
                     ]),
             ),
-            dcc.Tab(
-                label='3D Replication',
-                className='control-upload',
-                children=[
-                    html.Div([
-                        html.H5("Which HLA should be repeated?"),
-                        dcc.Input(
-                            id="rep-hla", 
-                            placeholder='Enter a HLA',
-                            type='text',
-                            value=''
-                        ), 
-                        html.H5("Which DESA Should be marked?"),
-                        dcc.Input(
-                            id="rep-desa", 
-                            placeholder="Enter DESA's",
-                            type='text',
-                            value=''
-                        )
-                    ], className= "three columns"),
-                    html.Div(
-                        html.H4("The 3D HLA structure would be represented below"),
-                        className= "nine columns",
-                    )
-                ]
-            )
-        ]),
-        # Hidden div inside the app that stores the intermediate value
-        html.Div(id='hidden-df', style={'display': 'none'}),
-        html.Div(id='hidden-data', style={'display': 'none'}),
+            # dbc.Tab(
+            #     label='3D Replication',
+            #     className='control-upload',
+            #     children=[
+            #         html.Div([
+            #             html.H5("Which HLA should be repeated?"),
+            #             dcc.Input(
+            #                 id="rep-hla", 
+            #                 placeholder='Enter a HLA',
+            #                 type='text',
+            #                 value=''
+            #             ), 
+            #             html.H5("Which DESA Should be marked?"),
+            #             dcc.Input(
+            #                 id="rep-desa", 
+            #                 placeholder="Enter DESA's",
+            #                 type='text',
+            #                 value=''
+            #             )
+            #         ],),
+            #         html.Div(
+            #             html.H4("The 3D HLA structure would be represented below")
+            #         )
+            #     ]
+            # )
+        ])),
     ]),
-],)
+], fluid=False,)
 # ######################################################################
 # App Layout Pieces
 # ######################################################################  
-# tab_2_layout = html.Div([
-#                     html.Div([
-#                         html.H5('Upload DESA Analysis [.csv & .xlsx & .pkl]'),
-#                         html.Div(
-#                             upload_file('DESA', id='upload-desa-data'),
-#                             style={'padding': 0, 'columnCount': 1},
-#                         ),
-#                         html.Div(id='output-desa-upload'),
-#                     ]),
-#                 ], className="four columns"),
-# table_layout = 
-tab_2_layout = html.Div([
-                        html.H3('Loading & Filtering:'),
-                        html.Div([
-                        html.Button('Show Table', id='show-table', n_clicks=0),
-                        html.H6('Sort By'),
-                        html.Div(
-                            dcc.Dropdown(
-                                id= 'dropdown_sortby',
-                                options=[
-                                    {'label': 'Early Failure', 'value': 'early_failure'},
-                                    {'label': 'Late Surviving', 'value': 'late_surviving'},
-                                    {'label': 'DESA', 'value': 'desa'}
-                                ],
-                                placeholder="Select HLA Class",
-                            ),
-                        )
-                    ]), 
-                    html.Div([
-                        html.H6('HLA Class'),
-                        html.Div(
-                            dcc.Dropdown(
-                                id= 'dropdown_class',
-                                options=[
-                                    {'label': 'I', 'value': 'I'},
-                                    {'label': 'II', 'value': 'II'},
-                                    {'label': 'I & II', 'value': 'III'}
-                                ],
-                                placeholder="Select HLA Class",
-                            ),
-                        )
-                    ]), 
-                    html.Div([
-                        html.H6('HLA Molecule'),
-                        html.Div(dcc.Input(id='input_hla', type='text', placeholder="HLA")),
-                    ]),
-                ], className="four columns", style={'padding': 10}),
-
-tab_3_layout = html.Div([
-                    html.Div([
-                            daq.BooleanSwitch(
-                                id='rAb-switch',
-                                on=False,
-                                label="Monoclonal Antobodies",
-                                labelPosition="top",
-                            ),
-                    ], style={'padding': 10}),
-                    html.Div([
-                        html.H6('Transplant ID'),
-                        html.Div(dcc.Input(id='input-tx', type='text', placeholder="Tx ID")),
-                        html.H6('Style'),
-                        dcc.Dropdown(
-                                id= 'dropdown_style',
-                                options=[
-                                    {'label': 'Stick', 'value': 'stick'},
-                                    {'label': 'Cartoon', 'value': 'cartoon'},
-                                    {'label': 'Sphere', 'value': 'sphere'}
-                                ],
-                                placeholder="Select HLA Class",
+####################################################################
+show_button =  dbc.Button('Show Table', id='show-table', n_clicks=0)
+sortby_dropdown = [
+    html.H6('Sort By'),
+    dcc.Dropdown(
+                id= 'dropdown_sortby',
+                options=[
+                    {'label': 'Early Failure', 'value': 'early_failure'},
+                    {'label': 'Late Surviving', 'value': 'late_surviving'},
+                    {'label': 'DESA', 'value': 'desa'}
+                ],
+                placeholder="",
+    ),
+]
+hla_class = [
+            html.H6('HLA Class'),
+            dcc.Dropdown(
+                id= 'dropdown_class',
+                options=[
+                    {'label': 'I', 'value': 'I'},
+                    {'label': 'II', 'value': 'II'},
+                    {'label': 'I & II', 'value': 'III'}
+                ],
+                placeholder="HLA Class",
+            ),
+]
+hla_molecule = [
+    html.H6('HLA Molecule'),
+    dbc.Input(id='input_hla', type='text', placeholder="HLA"),
+]
+filter_card = dbc.Card(
+    [
+        dbc.CardHeader(html.H5('Filtering',  className="card-title")),
+        dbc.CardBody(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(show_button),
+                        dbc.Col(sortby_dropdown)
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(hla_class),
+                        dbc.Col(hla_molecule)
+                    ]
+                )
+            ]
+        )
+    ]
+)
+mAb_switch = daq.BooleanSwitch(
+                id='mAb-switch',
+                on=False,
+                label="Monoclonal Antibody",
+                labelPosition="top",
+            )
+rAb_switch = daq.BooleanSwitch(
+                id='rAb-switch',
+                on=False,
+                label="Reactive Antibody",
+                labelPosition="top",
+            )
+transplant_id = [
+        html.H6('Transplant ID'),
+        dbc.Input(id='input-tx', type='text', placeholder="Tx ID")
+    ]
+style_dropdown = [
+    html.H6('Style'),
+    dcc.Dropdown(
+                id= 'dropdown_style',
+                options=[
+                    {'label': 'Stick', 'value': 'stick'},
+                    {'label': 'Cartoon', 'value': 'cartoon'},
+                    {'label': 'Sphere', 'value': 'sphere'}
+                ],
+                placeholder="Style",
+    )
+]
+show_buttion = dbc.Button('Show', id='submit-tx-show', n_clicks=0)
+vis_card = dbc.Card(
+    [
+        dbc.CardHeader(html.H5('Visualisation',  className="card-title")),
+        dbc.CardBody(
+            [
+                dbc.Row(
+                    [
+                        dbc.Col(
+                            dbc.Row(
+                                [
+                                    mAb_switch,
+                                    rAb_switch,
+                                ],  align="start",
+                            ), 
                         ),
-                        html.Div(
-                            html.Button('Show', id='submit-tx-show', n_clicks=0),
-                        style={'padding': 10})
-                    ], style={'padding': 10})
-                ], 
-                className="four columns",)
+                        dbc.Col(transplant_id, )
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(style_dropdown),
+                        dbc.Col(show_buttion)
+                    ]
+                )
+            ]
+        )
+    ]
+)
 
-
+tab_2_layout = html.Div(
+    [
+        # dbc.CardHeader(html.H3('Filtering & Visualization')),
+        dbc.Row(filter_card, className="mb-4"),
+        dbc.Row(vis_card, className="mb-4")
+    ]    
+)
                 
 # ######################################################################
 # Callbacks
@@ -203,22 +225,24 @@ tab_3_layout = html.Div([
 
 
 @app.callback(Output('tabs-children-content', 'children'),
-              [Input('tabs-children', 'value')])
+              [Input('tabs-children', 'active_tab')])
 def render_content(tab):
     if tab == 'tab-1-1':
-        return html.Div([
-            html.H3('What is 3D HLA Viewer'),
-            html.P("""
-            Molecule3D is a visualizer that allows you to view biomolecules in multiple representations: 
-            sticks, spheres, and cartoons.You can select a preloaded structure, or upload your own, in the
-            "Data" tab. A sample structure is also available to download. In the "View" tab, you can change 
-            the style and coloring of the various components of your molecule.
-            """)
-        ], className="four columns", style={'padding': 10})
+        return dbc.Card([
+                    dbc.CardHeader(html.H3('What is HLA3D ?')),
+                    dbc.CardBody(
+                        html.P("""
+                        HLA3D is a visualizer that allows you to view biomolecules in multiple representations: 
+                        sticks, spheres, and cartoons.You can select a preloaded structure, or upload your own, in the
+                        "Data" tab. A sample structure is also available to download. In the "View" tab, you can change 
+                        the style and coloring of the various components of your molecule.
+                        """)
+                    )
+                ], style={"width": "4"})
     elif tab == 'tab-1-2':
         return tab_2_layout
-    elif tab == 'tab-1-3':
-        return tab_3_layout
+    # elif tab == 'tab-1-3':
+    #     return None
 
 
 
@@ -234,65 +258,87 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla):
         desa_db = load_desa_db()
         desa_db = filtering_logic(desa_db, sort_failure, sort_class, hla)
         df_print = dashtable_data_compatibility(desa_db)
-        return dash_table.DataTable(
-                                columns=[{"name": i, "id": i} for i in df_print.columns],   
-                                data=df_print.to_dict('records'),
-                                page_size= 20,
-                                editable=True,
-                                style_table={'height': '400px', 
-                                             'overflowY': 'auto'},
-                                style_cell_conditional=[
-                                                        {
-                                                            'if': {'column_id': c},
-                                                            'textAlign': 'left'
-                                                        } for c in ['Date', 'Region']
-                                                    ],
-                                style_data_conditional=[
-                                                        {
-                                                            'if': {'row_index': 'odd'},
-                                                            'backgroundColor': 'rgb(248, 248, 248)'
-                                                        }
-                                                    ],
-                                style_header={
-                                                'backgroundColor': 'rgb(230, 230, 230)',
-                                                'fontWeight': 'bold'
-                                            }
-                        )         
+        return dbc.Table.from_dataframe(
+            df_print, 
+            bordered=True,
+            dark=True,
+            hover=True,
+            striped=True,
+            size='sm',
+            )
+                        #         columns=[{"name": i, "id": i} for i in df_print.columns],   
+                        #         data=df_print.to_dict('records'),
+                        #         page_size= 20,
+                        #         editable=True,
+                        #         style_table={'height': '400px', 
+                        #                      'overflowY': 'auto'},
+                        #         style_cell_conditional=[
+                        #                                 {
+                        #                                     'if': {'column_id': c},
+                        #                                     'textAlign': 'left'
+                        #                                 } for c in ['Date', 'Region']
+                        #                             ],
+                        #         style_data_conditional=[
+                        #                                 {
+                        #                                     'if': {'row_index': 'odd'},
+                        #                                     'backgroundColor': 'rgb(248, 248, 248)'
+                        #                                 }
+                        #                             ],
+                        #         style_header={
+                        #                         'backgroundColor': 'rgb(230, 230, 230)',
+                        #                         'fontWeight': 'bold'
+                        #                     }
+                        # )         
 
+
+def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
+    """
+    This wraps the visualisation payload into a function
+    """
+
+    return [
+            html.H6(
+                    html.Span(f'{hla}',
+                        id=f"tooltip-target-{TxID}-{i}",
+                        style={"textDecoration": "underline", "cursor": "pointer"},
+                    )
+            ),
+            dbc.Tooltip(
+                f"DESA #{len(hlavsdesa[TxID][hla]['desa'])}: {hlavsdesa[TxID][hla]['desa']}",
+                target=f"tooltip-target-{TxID}-{i}",
+                placement='top'
+            ),
+            div_3dviewer(hla, TxID, _3d_data)
+        ]
 
 @app.callback(Output('3d-view-loading', 'children'),
               Input('submit-tx-show','n_clicks'),
               [State('input-tx', 'value'),
                State('dropdown_style', 'value'),
                State('rAb-switch', 'on')])
-def show_3d_tx(n_clicks, TxID, style, rAb_switch):
+def show_3d_tx(n_clicks, TxIDs, style, rAb_switch):
     if n_clicks:
+        if TxIDs is None:
+            return no_update
         desa_df = load_desa_db()
         epitope_db = load_epitope_db()
-        _3d_data, hlavsdesa = data_3dviewer(desa_df, epitope_db, int(TxID), style=style, rAb=rAb_switch)
-        return [html.Div([
-                    html.H4(f'Transplant ID: {TxID}'),
-                    html.Div([
-                        html.Div([
-                            html.Div([
-                                html.H6([
-                                        html.Span(f'HLA: {hla}',
-                                            id=f"tooltip-target-{i}",
-                                            style={"textDecoration": "underline", "cursor": "pointer"},
-                                        )
-                                ]),
-                                dbc.Tooltip(
-                                    f"DESA #{len(hlavsdesa[hla]['desa'])}: {hlavsdesa[hla]['desa']}",
-                                    # "DESA rAb: {hlavsdesa[hla].get('desa_rAb')}"
-                                    target=f"tooltip-target-{i}",
-                                    placement='top'
-                                )
-                            ]),
-                            div_3dviewer(hla, _3d_data)], 
-                            className="four columns") for i, hla in enumerate(hlavsdesa.keys())
-                        ])
-                    ])
-                ]
+        TxIDs = list(map(int, TxIDs.split(',')))
+        _3d_data, hlavsdesa = data_3dviewer(desa_df, epitope_db, TxIDs, style=style, rAb=rAb_switch)
+        return [
+                html.Div(
+                    [
+                        html.H4(f'Transplant ID: {TxID}'),
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                        vis_payload(i, hla, TxID, hlavsdesa, _3d_data), width=6
+                                ) for i, hla in enumerate(hlavsdesa[TxID].keys())
+                            ]
+                        )
+                    ] 
+                ) for TxID in TxIDs 
+            ]
+        # )
     else:
         return 'No Transplant ID is selected for visualisation'
 

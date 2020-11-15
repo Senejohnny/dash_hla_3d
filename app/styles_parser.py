@@ -5,6 +5,17 @@ Bio.
 Modified October 2020 by Danial Senejohnny, d.senejohnny@gmail.com """
 
 import json
+import logging
+# from app.analysis_utils import setup_logger
+# logger = setup_logger('aminoacid', 'data/aminoacid.log')
+
+logging.basicConfig(filename= 'data/aminoacid.log',
+                    filemode = 'w',
+                    format= '%(name)s - %(asctime)s - %(levelname)s - %(message)s',
+                    level=logging.DEBUG,
+)
+# Create & configure logger
+logger = logging.getLogger('aminoacid')
 
 Aminoacid_conversion = {'CYS': 'C', 'ASP': 'D', 'SER': 'S', 'GLN': 'Q', 
                         'ILE': 'I', 'PRO': 'P', 'THR': 'T', 'PHE': 'F', 
@@ -170,7 +181,8 @@ def create_style(
     # desa color
     desa_color = {
         'desa': '#FFFF00', # Yellow
-        'desa_rAb': '#FFA500', # Orange
+        'desa_mAb': '#FFA500', # Orange
+        'desa_rAb': '#FF0000', # Red
     }
 
     # Variables that store the character positions of different
@@ -237,19 +249,29 @@ def create_style(
                     ] if atm_type in atom_colors else '#330000',
                     'visualization_type': style
                 }
-            # print((desa_info))
             if chain == desa_info['chain']:
-                # print(chain, res_indx, type(res_indx), int(res_indx))
-                # print(int(res_indx), desa_info['relevant_desa'], int(res_indx) in desa_info['relevant_desa'])
-                # print(desa_info['relevant_desa'])
-                if int(res_indx) in desa_info['desa']:
+                if res_indx in desa_info['desa'].keys():
+                    # desa_set = desa_info['desa'].keys()
+                    # logger.info(f' {res_indx}, {desa_set}')    
                     data[index] = {
                             "color": desa_color['desa'],
                             "visualization_type": style
                         }
+                    try:
+                        found_res_name, exp_res_name = Aminoacid_conversion.get(res_name), desa_info['desa'][res_indx]
+                        # print(f'Expected {res_indx}{exp_res_name}, found: {res_indx}{found_res_name}')
+                        assert found_res_name == exp_res_name
+                    except AssertionError:
+                        logger.info(f"""In the .pdb file {pdb_path}, chain:{chain}, 
+                            Expected {res_indx}{exp_res_name}, found: {res_indx}{found_res_name}""")
                 if int(res_indx) in desa_info['desa_rAb']: # we put if to recolor the epitopes in the former step
                     data[index] = {
                             "color": desa_color['desa_rAb'],
+                            "visualization_type": style
+                        }
+                if int(res_indx) in desa_info['desa_mAb']: # we put if to recolor the epitopes in the former step
+                    data[index] = {
+                            "color": desa_color['desa_mAb'],
                             "visualization_type": style
                         }
         else:
