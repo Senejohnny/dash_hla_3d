@@ -22,7 +22,7 @@ def filtering_logic(df, sort_failure, sort_class, hla):
             ind_T_early = df['Survival[Y]'].apply(lambda x: x < 1/4)
             ind_E_early = df['Failure'].apply(lambda x: x == 1)
             df = df[ind_T_early & ind_E_early]
-        print(sort_failure)
+            
         if sort_failure == 'late_surviving': 
             ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10)
             ind_E_late = df['Failure'].apply(lambda x: x == 0 | x == 2)
@@ -63,7 +63,20 @@ def Header(name):
     link = html.A(logo, href="https://plotly.com/dash/")
 
     return dbc.Row([dbc.Col(title, md=8), dbc.Col(link, md=4)])
-    
+def vis_payload(hlavsdesa, _3d_data, hla, i):
+    return [
+                                html.H6(
+                                        html.Span(f'{hla}',
+                                            id=f"tooltip-target-{i}",
+                                            style={"textDecoration": "underline", "cursor": "pointer"},
+                                        )
+                                ),
+                                dbc.Tooltip(
+                                    f"DESA #{len(hlavsdesa[hla]['desa'])}: {hlavsdesa[hla]['desa']}",
+                                    target=f"tooltip-target-{i}",
+                                    placement='top'
+                                ),
+                            div_3dviewer(hla, _3d_data)]
 #####################################################################################
 # File Upload
 #####################################################################################
@@ -114,7 +127,6 @@ def parse_contents(contents, filename, Data_type:str)-> pd.DataFrame: # the df o
         elif filename.rsplit('.', 1)[1].lower() in ['pkl', 'pickle']:
             # Assume that the user uploaded an pickle file
             df = pd.read_pickle(io.BytesIO(decoded))     #BytesIO is an in-memory stream for text I/O
-            print(df)
     except Exception as e:
         print(e)
         return no_update, html.Div(["""

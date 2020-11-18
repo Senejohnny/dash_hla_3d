@@ -8,8 +8,8 @@ import logging
 from typing import Dict, List
 from collections import defaultdict
 
-from app import styles_parser as sparser
-from dash_bio_utils import pdb_parser as parser
+from app import styles_parser as sparser, pdb_parser as parser
+# from dash_bio_utils import pdb_parser as parser
 import dash_bio as dashbio
 
 ######### logging ########
@@ -99,7 +99,11 @@ def find_molecule_path(locus:str, filename:str) -> str:
         return  False, 'No path exists'
 
 
-def hlavsdesa_donor(epitope_db, desa_db:pd.DataFrame, TxIDs:List[int], rAb, mAb) -> dict:
+def hlavsdesa_donor(epitope_db, 
+                    desa_db:pd.DataFrame, 
+                    TxIDs:List[int], 
+                    rAb=False,
+                    mAb=False) -> dict:
     """ This function receives the Tx and desa database and returns HLA vs DESA 
     the output of this function is a nested dictionary. The underscore keys 
     are needed for style parser analysis, while the other keys are useful for presentation
@@ -154,11 +158,11 @@ def _3dview_data_preparation(hlavsdesa:dict, style)-> Dict:
             desa_info = {
                 'chain': get_hla_polychain(hla),
                 'desa': {_[0]:_[1] for _ in hlavsdesa[TxID][hla]['_desa']},
-                'desa_rAb': set([int(_[0]) for _ in hlavsdesa[TxID][hla]['_desa_rAb'] ]),
-                'desa_mAb': set([int(_[0]) for _ in hlavsdesa[TxID][hla]['_desa_mAb'] ])
+                'desa_rAb': set([int(_[0]) for _ in hlavsdesa[TxID][hla]['_desa_rAb']]),
+                'desa_mAb': set([int(_[0]) for _ in hlavsdesa[TxID][hla]['_desa_mAb']])
             }
 
-            print('desa_info', desa_info)
+            # print('desa_info', desa_info)
             locus, filename = hla_to_filename(hla)
             pdb_exist, pdb_path = find_molecule_path(locus, filename)
             # Create the model data from the pdb files 
@@ -168,10 +172,9 @@ def _3dview_data_preparation(hlavsdesa:dict, style)-> Dict:
                 logger.info(f'{hla}:{pdb_path}: IOError: No such file or directory')
                 continue
             # Create the style data from the decoded contents
+            # style_data = sparser.create_style(pdb_path, style, desa_info=desa_info)
             style_data = sparser.create_style(pdb_path, style, mol_color='chain', desa_info=desa_info)
             _3d_models_data[TxID][hla] = {'model':model_data, 'style':style_data}
-    print('_3d_models_data payload size is:', sys.getsizeof(_3d_models_data))
-    print(_3d_models_data.keys())
     return _3d_models_data
 
 
@@ -200,9 +203,14 @@ def div_3dviewer(hla:str, TxID, _3d_data):
     return component
 
 
-def data_3dviewer(desa_db, epitope_db, TxID:List[int], style:str='sphere', rAb=False, mAb=False):
+def data_3dviewer(desa_db, 
+                epitope_db, 
+                TxIDs:List[int], 
+                style:str='sphere',
+                rAb=False,
+                mAb=False):
     """ This function provides the require data consumed by 'div_3dviewer' """
 
-    hlavsdesa = hlavsdesa_donor(epitope_db, desa_db, TxID, rAb, mAb)
+    hlavsdesa = hlavsdesa_donor(epitope_db, desa_db, TxIDs, rAb, mAb)
     _3d_data = _3dview_data_preparation(hlavsdesa, style)
     return _3d_data, hlavsdesa

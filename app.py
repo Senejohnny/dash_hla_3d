@@ -61,10 +61,10 @@ app.layout = dbc.Container([
             ])), 
             dbc.Tab(label='HLA 3D View', 
                     children=html.Div([
-                        html.H5('HLA Molecule 3D View'),
-                        html.Div(f'''
-                            This is a 3D view of HLA molecules in Transplant ID: , with DESA color depicted in yellow  
-                        '''),
+                        # html.H5('HLA Molecule 3D View'),
+                        # html.Div(f'''
+                        #     This is a 3D view of HLA molecules in Transplant ID: , with DESA color depicted in yellow  
+                        # '''),
                         dcc.Loading(
                             id='3d-view-loading', 
                             type="circle",
@@ -266,30 +266,6 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla):
             striped=True,
             size='sm',
             )
-                        #         columns=[{"name": i, "id": i} for i in df_print.columns],   
-                        #         data=df_print.to_dict('records'),
-                        #         page_size= 20,
-                        #         editable=True,
-                        #         style_table={'height': '400px', 
-                        #                      'overflowY': 'auto'},
-                        #         style_cell_conditional=[
-                        #                                 {
-                        #                                     'if': {'column_id': c},
-                        #                                     'textAlign': 'left'
-                        #                                 } for c in ['Date', 'Region']
-                        #                             ],
-                        #         style_data_conditional=[
-                        #                                 {
-                        #                                     'if': {'row_index': 'odd'},
-                        #                                     'backgroundColor': 'rgb(248, 248, 248)'
-                        #                                 }
-                        #                             ],
-                        #         style_header={
-                        #                         'backgroundColor': 'rgb(230, 230, 230)',
-                        #                         'fontWeight': 'bold'
-                        #                     }
-                        # )         
-
 
 def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
     """
@@ -301,6 +277,7 @@ def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
                     html.Span(f'{hla}',
                         id=f"tooltip-target-{TxID}-{i}",
                         style={"textDecoration": "underline", "cursor": "pointer"},
+                        className="card-subtitle",
                     )
             ),
             dbc.Tooltip(
@@ -310,6 +287,8 @@ def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
             ),
             div_3dviewer(hla, TxID, _3d_data)
         ]
+def get_survivaltime_from_df(desa_df, TxID):
+    return desa_df[desa_df['TransplantID'] == TxID]['Survival[Y]'].values[0] 
 
 @app.callback(Output('3d-view-loading', 'children'),
               Input('submit-tx-show','n_clicks'),
@@ -321,31 +300,38 @@ def show_3d_tx(n_clicks, TxIDs, style, rAb_switch):
         if TxIDs is None:
             return no_update
         desa_df = load_desa_db()
+        
         epitope_db = load_epitope_db()
         TxIDs = list(map(int, TxIDs.split(',')))
         _3d_data, hlavsdesa = data_3dviewer(desa_df, epitope_db, TxIDs, style=style, rAb=rAb_switch)
         return [
-                html.Div(
+                dbc.Card(
                     [
-                        html.H4(f'Transplant ID: {TxID}'),
-                        dbc.Row(
+                        dbc.CardHeader(
+                            html.H4(f'Transplant ID: {TxID}, Survival Time [Y]: {get_survivaltime_from_df(desa_df, TxID): .2f}', 
+                                    className="card-title")
+                        ),
+                        dbc.CardBody(
                             [
-                                dbc.Col(
-                                        vis_payload(i, hla, TxID, hlavsdesa, _3d_data), width=6
-                                ) for i, hla in enumerate(hlavsdesa[TxID].keys())
+                                dbc.Row(
+                                    [
+                                        dbc.Col(
+                                                vis_payload(i, hla, TxID, hlavsdesa, _3d_data), width=6
+                                        ) for i, hla in enumerate(hlavsdesa[TxID].keys())
+                                    ]
+                                )
                             ]
-                        )
-                    ] 
-                ) for TxID in TxIDs 
+                        ),
+                    ],
+                color='secondary', style={'padding': 10}) for TxID in TxIDs 
             ]
-        # )
     else:
         return 'No Transplant ID is selected for visualisation'
 
 
 
 if __name__ == '__main__':
-    if Repository('.').head.shorthand == 'master':
+    if Repository('.').head.shorthand in ['master', 'production']:
         debug = False
     else:
         debug = True
