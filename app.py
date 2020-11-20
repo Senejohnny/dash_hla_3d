@@ -232,10 +232,11 @@ def render_content(tab):
                     dbc.CardHeader(html.H3('What is HLA3D ?')),
                     dbc.CardBody(
                         html.P("""
-                        HLA3D is a visualizer that allows you to view biomolecules in multiple representations: 
-                        sticks, spheres, and cartoons.You can select a preloaded structure, or upload your own, in the
-                        "Data" tab. A sample structure is also available to download. In the "View" tab, you can change 
-                        the style and coloring of the various components of your molecule.
+                        HLA3D is a visualizer that allows you to view the epitopes on HLA molecules
+                        with multiple representations: sticks, spheres, and cartoons and color code for 
+                        epitopes that are recognised by reactive and human monoclonal antibodies. 
+                        You can search and filter the Procare database for all the HLA epitopes to which 
+                        antibody can bind.  
                         """)
                     )
                 ], style={"width": "4"})
@@ -331,7 +332,7 @@ def show_3d_tx(n_clicks, TxIDs, style, rAb_switch):
 
 
 if __name__ == '__main__':
-    if Repository('.').head.shorthand in ['master', 'production']:
+    if Repository('.').head.shorthand in ['master']:
         debug = False
     else:
         debug = True

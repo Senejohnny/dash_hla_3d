@@ -181,8 +181,8 @@ def create_style(
     # desa color
     desa_color = {
         'desa': '#FFFF00', # Yellow
-        'desa_mAb': '#FFA500', # Orange
-        'desa_rAb': '#FF0000', # Red
+        'desa_rAb': '#FFA500', # Orange
+        'desa_mAb': '#FF0000', # Red
     }
 
     # Variables that store the character positions of different
