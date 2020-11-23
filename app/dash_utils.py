@@ -10,10 +10,15 @@ import dash_core_components as dcc
 import dash_html_components as html
 
 
-def filtering_logic(df, sort_failure, sort_class, hla):
+def filtering_logic(df,
+                    ep_db,
+                    sort_failure, 
+                    sort_class, 
+                    hla, 
+                    donor_type,
+                    ellipro_score):
     """ This function wraps all the logic pertain to
     filtering the table """
-
     if sort_failure:
         if sort_failure == 'desa':  
             df = df.sort_values(by='#DESA', ascending=False)
@@ -34,7 +39,20 @@ def filtering_logic(df, sort_failure, sort_class, hla):
     if hla:
         ind = df['Donor_HLA'].apply(lambda x: hla in x)
         df = df[ind]
-
+    if donor_type:
+        ind = df['Donor_Type'].apply(lambda x: x == donor_type)
+        df = df[ind]
+    if ellipro_score:
+        try:
+            df.drop('EpvsHLA_Donor_filt', axis=1)
+        except:
+            pass
+        ind = ep_db['ElliPro Score'].apply(lambda x: x in ellipro_score)
+        ep_ellipro = ep_db[ind].Epitope.values.tolist()
+        df['EpvsHLA_Donor_filt'] = df.EpvsHLA_Donor.apply(lambda x: 
+                        {key:value for key, value in x.items() 
+                                    if key in ep_ellipro})
+        df.to_pickle('./data/desa_3d_view.pickle')
     return df
 
 def dashtable_data_compatibility(df):

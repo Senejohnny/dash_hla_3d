@@ -44,7 +44,8 @@ def load_desa_db():
 
     desa_path = os.path.expanduser('./data/desa_3d_view.pickle')
     desa_db = pd.read_pickle(desa_path)
-    desa_db = desa_db.drop('Status', axis=1)
+    # desa_db = desa_db.drop('Status', axis=1)
+    print(desa_db.columns)
     return desa_db
 
 def load_epitope_db():
@@ -123,7 +124,11 @@ def hlavsdesa_donor(epitope_db,
         desa_db_per_Tx = desa_db[desa_db.TransplantID == TxID]
         if desa_db_per_Tx.shape[0] == 0:
             raise ValueError(f'Transplant ID {TxID} does not exist in the datat set')
-        desavshla = desa_db_per_Tx.EpvsHLA_Donor.values[0]
+        # print('desa_db_per_Tx', desa_db_per_Tx.columns)
+        if 'EpvsHLA_Donor_filt' in desa_db_per_Tx.columns:
+            desavshla = desa_db_per_Tx.EpvsHLA_Donor_filt.values[0]
+        else:
+            desavshla = desa_db_per_Tx.EpvsHLA_Donor.values[0]
         for desa, hla in desavshla.items():
             hlavsdesa[TxID][hla]['desa'].append(desa)
             hlavsdesa[TxID][hla]['_desa'].extend(polymorphic_residues(desa, epitope_db))
@@ -138,7 +143,6 @@ def hlavsdesa_donor(epitope_db,
                         hlavsdesa[TxID][hla]['_desa_mAb'].extend(polymorphic_residues(desa, epitope_db))
                 except IndexError:
                     logger.info(f'desa {desa} does not exist in the epitope_db')
-    # print('hlavsdesa payload size is:', sys.getsizeof(hlavsdesa))
     return hlavsdesa
 
     

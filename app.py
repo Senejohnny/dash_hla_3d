@@ -5,7 +5,8 @@ import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
-import six.moves.urllib.request as urlreq
+# import pymongo
+# from pymongo import MongoClient
 
 import dash
 from dash import no_update
@@ -15,6 +16,7 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+from flask_caching import Cache
 
 
 from app.analysis_utils import load_desa_db, data_3dviewer, div_3dviewer, load_epitope_db
@@ -22,6 +24,13 @@ from app.analysis_utils import load_desa_db, data_3dviewer, div_3dviewer, load_e
 from app.dash_utils import filtering_logic, Header, dashtable_data_compatibility
 from pygit2 import Repository
 
+
+# mongo_client = MongoClient('localhost', 27017) # build a new client instance of MongoClient
+# db = mongo_client.desa_database # create new database
+# desa_col = db['desa_db'] # create new collection instance
+# desa_df = load_desa_db()
+# data_dict = desa_df.to_dict("records") # convert to dictionary
+# desa_col.insertMany({"index":"desa_db","data":data_dict}) # inesrt into DB
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 app = dash.Dash(__name__, title='HLA3D Epitopes', external_stylesheets=[dbc.themes.CERULEAN])
@@ -31,7 +40,34 @@ app.config['suppress_callback_exceptions'] = True
 #     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
 # })
 
+cache = Cache(app.server, config={
+    'CACHE_TYPE': 'redis',
+    # Note that filesystem cache doesn't work on systems with ephemeral
+    # filesystems like Heroku.
+    'CACHE_TYPE': 'filesystem',
+    'CACHE_DIR': 'cache-directory',
 
+    # should be equal to maximum number of users on the app at a single time
+    # higher numbers will store more data in the filesystem / redis cache
+    'CACHE_THRESHOLD': 200
+})
+
+timeout=1000
+def load_ep_db_cache():
+    @cache.memoize(timeout=timeout)
+    def query_ep_data():
+        # This could be an expensive data querying step
+        ep_db =  load_epitope_db()
+        return ep_db.to_json(date_format='iso', orient='split')
+    return pd.read_json(query_ep_data(), orient='split')
+    
+def load_desa_db_cache():
+    @cache.memoize(timeout=timeout)
+    def query_desa_data():
+        # This could be an expensive data querying step
+        desa_db =  load_desa_db()
+        return desa_db.to_json(date_format='iso', orient='split')
+    return pd.read_json(query_desa_data(), orient='split')
 
 
 
@@ -61,41 +97,12 @@ app.layout = dbc.Container([
             ])), 
             dbc.Tab(label='HLA 3D View', 
                     children=html.Div([
-                        # html.H5('HLA Molecule 3D View'),
-                        # html.Div(f'''
-                        #     This is a 3D view of HLA molecules in Transplant ID: , with DESA color depicted in yellow  
-                        # '''),
                         dcc.Loading(
                             id='3d-view-loading', 
                             type="circle",
                         )
                     ]),
             ),
-            # dbc.Tab(
-            #     label='3D Replication',
-            #     className='control-upload',
-            #     children=[
-            #         html.Div([
-            #             html.H5("Which HLA should be repeated?"),
-            #             dcc.Input(
-            #                 id="rep-hla", 
-            #                 placeholder='Enter a HLA',
-            #                 type='text',
-            #                 value=''
-            #             ), 
-            #             html.H5("Which DESA Should be marked?"),
-            #             dcc.Input(
-            #                 id="rep-desa", 
-            #                 placeholder="Enter DESA's",
-            #                 type='text',
-            #                 value=''
-            #             )
-            #         ],),
-            #         html.Div(
-            #             html.H4("The 3D HLA structure would be represented below")
-            #         )
-            #     ]
-            # )
         ])),
     ]),
 ], fluid=False,)
@@ -132,6 +139,31 @@ hla_molecule = [
     html.H6('HLA Molecule'),
     dbc.Input(id='input_hla', type='text', placeholder="HLA"),
 ]
+donor_type = [
+    html.H6('Donor Type'),
+    dcc.Dropdown(
+                id= 'dropdown_donor_type',
+                options=[
+                    {'label': 'Living', 'value': 'Living'},
+                    {'label': 'Deceased', 'value': 'Deceased'},
+                ],
+                placeholder="",
+    ),
+]
+ellipro_score = [
+    html.H6('ElliPro Score'),
+    dcc.Dropdown(
+                id= 'dropdown_elli_pro',
+                options=[
+                    {'label': 'High', 'value': 'High'},
+                    {'label': 'Intermediate', 'value': 'Intermediate'},
+                    {'label': 'Low', 'value': 'Low'},
+                    {'label': 'Very Low', 'value': 'Very Low'},
+                ],
+                placeholder="",
+                multi=True,
+    ),
+]
 filter_card = dbc.Card(
     [
         dbc.CardHeader(html.H5('Filtering',  className="card-title")),
@@ -139,14 +171,24 @@ filter_card = dbc.Card(
             [
                 dbc.Row(
                     [
-                        dbc.Col(show_button),
-                        dbc.Col(sortby_dropdown)
+                        dbc.Col(show_button, style={'padding':5}, align="center")
+                    ],
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(donor_type,  style={'padding':5}),
+                        dbc.Col(sortby_dropdown,  style={'padding':5})
                     ]
                 ),
                 dbc.Row(
                     [
-                        dbc.Col(hla_class),
-                        dbc.Col(hla_molecule)
+                        dbc.Col(ellipro_score,  style={'padding':5})
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(hla_class,  style={'padding':5}),
+                        dbc.Col(hla_molecule,  style={'padding':5})
                     ]
                 )
             ]
@@ -156,13 +198,13 @@ filter_card = dbc.Card(
 mAb_switch = daq.BooleanSwitch(
                 id='mAb-switch',
                 on=False,
-                label="Monoclonal Antibody",
+                label="Monoclonal Abs",
                 labelPosition="top",
             )
 rAb_switch = daq.BooleanSwitch(
                 id='rAb-switch',
                 on=False,
-                label="Reactive Antibody",
+                label="Reactive Abs",
                 labelPosition="top",
             )
 transplant_id = [
@@ -181,7 +223,7 @@ style_dropdown = [
                 placeholder="Style",
     )
 ]
-show_buttion = dbc.Button('Show', id='submit-tx-show', n_clicks=0)
+vis_buttion = dbc.Button('Visualise 3D', id='submit-tx-show', n_clicks=0)
 vis_card = dbc.Card(
     [
         dbc.CardHeader(html.H5('Visualisation',  className="card-title")),
@@ -189,21 +231,19 @@ vis_card = dbc.Card(
             [
                 dbc.Row(
                     [
-                        dbc.Col(
-                            dbc.Row(
-                                [
-                                    mAb_switch,
-                                    rAb_switch,
-                                ],  align="start",
-                            ), 
-                        ),
-                        dbc.Col(transplant_id, )
+                        dbc.Col(style_dropdown, style={'padding':5}),
+                        dbc.Col(transplant_id, style={'padding':5})
                     ]
                 ),
                 dbc.Row(
                     [
-                        dbc.Col(style_dropdown),
-                        dbc.Col(show_buttion)
+                        dbc.Col(mAb_switch, style={'padding':5}),
+                        dbc.Col(rAb_switch, style={'padding':5})
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(vis_buttion, style={'padding':5})
                     ]
                 )
             ]
@@ -251,13 +291,16 @@ def render_content(tab):
               [Input('show-table','n_clicks'),],
               [State('dropdown_sortby', 'value'),
                State('dropdown_class', 'value'),
-               State('input_hla', 'value')])
-def update_output_data(n_clicks, sort_failure, sort_class, hla):
+               State('input_hla', 'value'),
+               State('dropdown_donor_type', 'value'),
+               State('dropdown_elli_pro', 'value')])
+def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, ellipro_score):
     if n_clicks == 0:
         return html.P('Click on Show button to see the table')
     else:
         desa_db = load_desa_db()
-        desa_db = filtering_logic(desa_db, sort_failure, sort_class, hla)
+        ep_db = load_ep_db_cache()
+        desa_db = filtering_logic(desa_db, ep_db, sort_failure, sort_class, hla, donor_type, ellipro_score)
         df_print = dashtable_data_compatibility(desa_db)
         return dbc.Table.from_dataframe(
             df_print, 
@@ -272,7 +315,7 @@ def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
     """
     This wraps the visualisation payload into a function
     """
-
+    
     return [
             html.H6(
                     html.Span(f'{hla}',
