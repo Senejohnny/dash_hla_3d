@@ -45,18 +45,17 @@ def load_desa_db():
     desa_path = os.path.expanduser('./data/desa_3d_view.pickle')
     desa_db = pd.read_pickle(desa_path)
     # desa_db = desa_db.drop('Status', axis=1)
-    print(desa_db.columns)
     return desa_db
 
 def load_epitope_db():
     """ This function loads EpitopeDB data frame"""
 
-    ep_path = os.path.expanduser('./data/20201105_EpitopevsHLA_distance.pickle')
+    ep_path = os.path.expanduser('./data/20201123_EpitopevsHLA.pickle')
     epitope_db = pd.read_pickle(ep_path)
     return epitope_db
 
 def flatten2list(object):
-    """ This function flattens objects in a nested structure """
+    """ This function flattens objects in a nested structure and returns a list"""
     gather = []
     for item in object:
         if isinstance(item, (list, set)):
@@ -64,6 +63,11 @@ def flatten2list(object):
         else:
             gather.append(item)
     return gather
+
+def flatten2set(object) -> set:
+    """ This function flattens objects in a nested structure and returns a set"""
+
+    return set(flatten2list(object))
 
 ###################################################################
 # Main functions for analysis
@@ -124,7 +128,6 @@ def hlavsdesa_donor(epitope_db,
         desa_db_per_Tx = desa_db[desa_db.TransplantID == TxID]
         if desa_db_per_Tx.shape[0] == 0:
             raise ValueError(f'Transplant ID {TxID} does not exist in the datat set')
-        # print('desa_db_per_Tx', desa_db_per_Tx.columns)
         if 'EpvsHLA_Donor_filt' in desa_db_per_Tx.columns:
             desavshla = desa_db_per_Tx.EpvsHLA_Donor_filt.values[0]
         else:
@@ -166,7 +169,6 @@ def _3dview_data_preparation(hlavsdesa:dict, style)-> Dict:
                 'desa_mAb': set([int(_[0]) for _ in hlavsdesa[TxID][hla]['_desa_mAb']])
             }
 
-            # print('desa_info', desa_info)
             locus, filename = hla_to_filename(hla)
             pdb_exist, pdb_path = find_molecule_path(locus, filename)
             # Create the model data from the pdb files 
