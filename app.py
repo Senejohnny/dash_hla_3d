@@ -17,9 +17,14 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from flask_caching import Cache
+from app.epitope import Epitope_DB
 
-
-from app.analysis_utils import load_desa_db, data_3dviewer, div_3dviewer, load_epitope_db
+from app.analysis_utils import (
+    load_desa_db, 
+    data_3dviewer, 
+    div_3dviewer,
+    load_epitope_db
+    )
 
 from app.dash_utils import filtering_logic, Header, dashtable_data_compatibility
 from pygit2 import Repository
@@ -52,22 +57,22 @@ cache = Cache(app.server, config={
     'CACHE_THRESHOLD': 200
 })
 
-timeout=1000
-def load_ep_db_cache():
-    @cache.memoize(timeout=timeout)
-    def query_ep_data():
-        # This could be an expensive data querying step
-        ep_db =  load_epitope_db()
-        return ep_db.to_json(date_format='iso', orient='split')
-    return pd.read_json(query_ep_data(), orient='split')
+# timeout=1000
+# def load_ep_db_cache():
+#     @cache.memoize(timeout=timeout)
+#     def query_ep_data():
+#         # This could be an expensive data querying step
+#         ep_db =  load_epitope_db()
+#         return ep_db.to_json(date_format='iso', orient='split')
+#     return pd.read_json(query_ep_data(), orient='split')
     
-def load_desa_db_cache():
-    @cache.memoize(timeout=timeout)
-    def query_desa_data():
-        # This could be an expensive data querying step
-        desa_db =  load_desa_db()
-        return desa_db.to_json(date_format='iso', orient='split')
-    return pd.read_json(query_desa_data(), orient='split')
+# def load_desa_db_cache():
+#     @cache.memoize(timeout=timeout)
+#     def query_desa_data():
+#         # This could be an expensive data querying step
+#         desa_db =  load_desa_db()
+#         return desa_db.to_json(date_format='iso', orient='split')
+#     return pd.read_json(query_desa_data(), orient='split')
 
 
 
@@ -90,15 +95,29 @@ app.layout = dbc.Container([
                         ]),
                         html.Div(id='tabs-children-content')
                     ], width={"size": 4, "order": 1, "offset": 0}),
-                    dbc.Col(id='tx-table',
-                            children=[],
-                            width={"size": 8, "order": 2, "offset": 0}
+                    dbc.Col(
+                        [
+                            html.H5(id='tx-table-records', children=[], style={'padding':5}),
+                            html.Div(
+                                id='tx-table',
+                                children=[],
+                            )          
+                        ],
+                        width={"size": 8, "order": 2, "offset": 0}
                     ),
             ])), 
             dbc.Tab(label='HLA 3D View', 
                     children=html.Div([
                         dcc.Loading(
                             id='3d-view-loading', 
+                            type="circle",
+                        )
+                    ]),
+            ),
+            dbc.Tab(label='HLA-Epitope 3D View', 
+                    children=html.Div([
+                        dcc.Loading(
+                            id='hla-epitope-3d-view-loading', 
                             type="circle",
                         )
                     ]),
@@ -223,10 +242,10 @@ style_dropdown = [
                 placeholder="Style",
     )
 ]
-vis_buttion = dbc.Button('Visualise 3D', id='submit-tx-show', n_clicks=0)
-vis_card = dbc.Card(
+vis_buttion = dbc.Button('Visualise', id='submit-tx-show', n_clicks=0)
+Tx_vis_card = dbc.Card(
     [
-        dbc.CardHeader(html.H5('Visualisation',  className="card-title")),
+        dbc.CardHeader(html.H5('Visualise Transplants:',  className="card-title")),
         dbc.CardBody(
             [
                 dbc.Row(
@@ -250,15 +269,37 @@ vis_card = dbc.Card(
         )
     ]
 )
+ep_vis_buttion = dbc.Button('Visualise', id='submit-hla-ep-show', n_clicks=0)
+ep_vis_card = dbc.Card(
+    [
+        dbc.CardHeader(html.H5('Visualise HLA-Epitopes',  className="card-title")),
+        dbc.CardBody(
+            [
+                dbc.Row(
+                    dbc.Textarea(
+                        id='input-textarea',
+                        bs_size='md', 
+                        className="mb-3", 
+                        placeholder="Epitopes for visualisation"
+                    )
+                ), 
+                dbc.Row(
+                        ep_vis_buttion, style={'padding':5}
+                )
+            ]
+        )
+    ]
+)
 
 tab_2_layout = html.Div(
     [
         # dbc.CardHeader(html.H3('Filtering & Visualization')),
-        dbc.Row(filter_card, className="mb-4"),
-        dbc.Row(vis_card, className="mb-4")
+        dbc.Row(filter_card, className="w-75 mb-4"),
+        dbc.Row(Tx_vis_card, className="w-75 mb-4"),
+        dbc.Row(ep_vis_card, className="w-75 mb-4")
     ]    
 )
-                
+
 # ######################################################################
 # Callbacks
 # ######################################################################
@@ -287,7 +328,8 @@ def render_content(tab):
 
 
 
-@app.callback(Output('tx-table', 'children'),
+@app.callback([Output('tx-table', 'children'),
+               Output('tx-table-records', 'children')],
               [Input('show-table','n_clicks'),],
               [State('dropdown_sortby', 'value'),
                State('dropdown_class', 'value'),
@@ -296,10 +338,10 @@ def render_content(tab):
                State('dropdown_elli_pro', 'value')])
 def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, ellipro_score):
     if n_clicks == 0:
-        return html.P('Click on Show button to see the table')
+        return html.P('Click on "Show Table" button to see the table'), None
     else:
         desa_db = load_desa_db()
-        ep_db = load_ep_db_cache()
+        ep_db = load_epitope_db()
         desa_db = filtering_logic(desa_db, ep_db, sort_failure, sort_class, hla, donor_type, ellipro_score)
         df_print = dashtable_data_compatibility(desa_db)
         return dbc.Table.from_dataframe(
@@ -309,7 +351,7 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, elli
             hover=True,
             striped=True,
             size='sm',
-            )
+            ), f'Records: {len(desa_db)}'
 
 def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
     """
@@ -372,6 +414,39 @@ def show_3d_tx(n_clicks, TxIDs, style, rAb_switch):
     else:
         return 'No Transplant ID is selected for visualisation'
 
+
+@app.callback(Output('hla-epitope-3d-view-loading', 'children'),
+              Input('submit-hla-ep-show','n_clicks'),
+              [State('input-textarea', 'value'),])
+def show_hla_epitope_3d(n_clicks, epitopes):
+    if n_clicks:
+        if epitopes is None:
+            return no_update
+        epitope_db =  Epitope_DB()
+        hlavsep = epitope_db.min_hlavsep(epitopes)
+        return [
+                dbc.Card(
+                    [
+                        # dbc.CardHeader(
+                        #     html.H4(f'', 
+                        #             className="card-title")
+                        # ),
+                        dbc.CardBody(
+                            [
+                                dbc.Row(
+                                    [
+                                        dbc.Col(
+                                                vis_payload(i, hla, TxID, hlavsdesa, _3d_data), width=6
+                                        ) for i, hla in enumerate(hlavsdesa[TxID].keys())
+                                    ]
+                                )
+                            ]
+                        ),
+                    ],
+                color='secondary', style={'padding': 10}) for TxID in TxIDs 
+            ]
+    else:
+        return 'No HLA Epitope is given for visualisation'
 
 
 if __name__ == '__main__':

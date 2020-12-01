@@ -1,16 +1,16 @@
 __main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*08:02
 __main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*12:02
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*07:02
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*15:02
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*05:01
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*16:01
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*12:03
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*08:01
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*02:02
 __main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*14:02
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*01:02
-__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*18:02
 __main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*06:02
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*15:02
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*18:02
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*08:01
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*16:01
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*07:02
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*05:01
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*01:02
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*12:03
+__main__ - WARNING - Expected residue C, but got M, sequence number: 1, chain: A,  HLA: C*02:02
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
@@ -46,31 +46,24 @@ __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
-__main__ - WARNING - Expected residue G, but got S, sequence number: 167, chain: A,  HLA: B*44:03
-__main__ - WARNING - Expected residue G, but got S, sequence number: 167, chain: A,  HLA: B*44:02
 __main__ - WARNING - Expected residue G, but got S, sequence number: 167, chain: A,  HLA: B*45:01
 __main__ - WARNING - Expected residue G, but got S, sequence number: 167, chain: A,  HLA: B*82:01
+__main__ - WARNING - Expected residue G, but got S, sequence number: 167, chain: A,  HLA: B*44:02
+__main__ - WARNING - Expected residue G, but got S, sequence number: 167, chain: A,  HLA: B*44:03
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
 __main__ - WARNING - Skipped hla: A*02:06
+__main__ - ERROR - Epitope [('275', 'K')] HLA C*18:02 "KeyError" (' ', 275, ' ')
 __main__ - ERROR - Epitope [('275', 'K')] HLA C*04:01 "KeyError" (' ', 275, ' ')
 __main__ - ERROR - Epitope [('275', 'K')] HLA C*17:01 "KeyError" (' ', 275, ' ')
-__main__ - ERROR - Epitope [('275', 'K')] HLA C*18:02 "KeyError" (' ', 275, ' ')
-__main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
@@ -78,8 +71,10 @@ __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
@@ -100,6 +95,11 @@ __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
@@ -113,8 +113,6 @@ __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
@@ -123,17 +121,8 @@ __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*03:03
-__main__ - WARNING - Skipped hla: DRB1*09:02
-__main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*09:02
@@ -143,9 +132,20 @@ __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
 __main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
+__main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*03:03
+__main__ - WARNING - Skipped hla: DRB1*09:02
 __main__ - WARNING - Expected residue T, but got S, sequence number: 185, chain: B,  HLA: DQB1*05:02
-__main__ - WARNING - Expected residue T, but got S, sequence number: 185, chain: B,  HLA: DQB1*05:03
 __main__ - WARNING - Expected residue T, but got S, sequence number: 185, chain: B,  HLA: DQB1*05:01
-__main__ - ERROR - Epitope [('2', 'D')] HLA DQA1*02:01 "KeyError" (' ', 2, ' ')
+__main__ - WARNING - Expected residue T, but got S, sequence number: 185, chain: B,  HLA: DQB1*05:03
 __main__ - ERROR - Epitope [('2', 'D')] HLA DQA1*05:01 "KeyError" (' ', 2, ' ')
+__main__ - ERROR - Epitope [('2', 'D')] HLA DQA1*02:01 "KeyError" (' ', 2, ' ')
