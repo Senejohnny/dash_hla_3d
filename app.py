@@ -38,7 +38,7 @@ from pygit2 import Repository
 # desa_col.insertMany({"index":"desa_db","data":data_dict}) # inesrt into DB
 
 external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
-app = dash.Dash(__name__, title='HLA3D Epitopes', external_stylesheets=[dbc.themes.CERULEAN])
+app = dash.Dash(__name__, title='HLA-Epitope 3D', external_stylesheets=[dbc.themes.CERULEAN])
 app.config['suppress_callback_exceptions'] = True
 
 # app.css.append_css({
@@ -57,22 +57,6 @@ cache = Cache(app.server, config={
     'CACHE_THRESHOLD': 200
 })
 
-# timeout=1000
-# def load_ep_db_cache():
-#     @cache.memoize(timeout=timeout)
-#     def query_ep_data():
-#         # This could be an expensive data querying step
-#         ep_db =  load_epitope_db()
-#         return ep_db.to_json(date_format='iso', orient='split')
-#     return pd.read_json(query_ep_data(), orient='split')
-    
-# def load_desa_db_cache():
-#     @cache.memoize(timeout=timeout)
-#     def query_desa_data():
-#         # This could be an expensive data querying step
-#         desa_db =  load_desa_db()
-#         return desa_db.to_json(date_format='iso', orient='split')
-#     return pd.read_json(query_desa_data(), orient='split')
 
 
 
@@ -80,7 +64,7 @@ cache = Cache(app.server, config={
 # App Layout
 # ######################################################################
 app.layout = dbc.Container([
-    Header('HLA3D Epitopes'),
+    Header('HLA-Epitope 3D'),
     html.Hr(),
     dbc.Row([
         dbc.Col(dbc.Tabs(id='tabs-mother', children=[
@@ -106,7 +90,7 @@ app.layout = dbc.Container([
                         width={"size": 8, "order": 2, "offset": 0}
                     ),
             ])), 
-            dbc.Tab(label='HLA 3D View', 
+            dbc.Tab(label='3D View', 
                     children=html.Div([
                         dcc.Loading(
                             id='3d-view-loading', 
@@ -310,10 +294,10 @@ tab_2_layout = html.Div(
 def render_content(tab):
     if tab == 'tab-1-1':
         return dbc.Card([
-                    dbc.CardHeader(html.H3('What is HLA3D ?')),
+                    dbc.CardHeader(html.H4('What is HLA-Epitope 3D ?')),
                     dbc.CardBody(
                         html.P("""
-                        HLA3D is a visualizer that allows you to view the epitopes on HLA molecules
+                        HLA-Epitope 3D is a visualizer that allows you to view the epitopes on HLA molecules
                         with multiple representations: sticks, spheres, and cartoons and color code for 
                         epitopes that are recognised by reactive and human monoclonal antibodies. 
                         You can search and filter the Procare database for all the HLA epitopes to which 
