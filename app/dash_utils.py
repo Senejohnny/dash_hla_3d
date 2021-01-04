@@ -9,7 +9,6 @@ import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
 
-
 def filtering_logic(df,
                     ep_db,
                     sort_failure, 
@@ -29,7 +28,7 @@ def filtering_logic(df,
             df = df[ind_T_early & ind_E_early]
             
         if sort_failure == 'late_surviving': 
-            ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10)
+            ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10) # Still have Kidney after 10 years
             ind_E_late = df['Failure'].apply(lambda x: x == 0 | x == 2)
             df = df[ind_T_late & ind_E_late]
     if sort_class:

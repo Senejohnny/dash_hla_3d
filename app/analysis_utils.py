@@ -55,7 +55,7 @@ def load_epitope_db():
     return epitope_db
 
 def flatten2list(object):
-    """ This function flattens objects in a nested structure and returns a list"""
+    """ This function flattens objects in a nested structure and retu"""
     gather = []
     for item in object:
         if isinstance(item, (list, set)):
@@ -135,17 +135,23 @@ def hlavsdesa_donor(epitope_db,
         for desa, hla in desavshla.items():
             hlavsdesa[TxID][hla]['desa'].append(desa)
             hlavsdesa[TxID][hla]['_desa'].extend(polymorphic_residues(desa, epitope_db))
-            if rAb | mAb:
-                try:
-                    ind = epitope_db.Epitope == desa
-                    if epitope_db[ind]['AntibodyReactivity'].values[0] == 'Yes':
-                        hlavsdesa[TxID][hla]['desa_rAb'].append(desa)
-                        hlavsdesa[TxID][hla]['_desa_rAb'].extend(polymorphic_residues(desa, epitope_db))                    
-                    if epitope_db[ind]['mAb'].values[0] == 'Yes':
-                        hlavsdesa[TxID][hla]['desa_mAb'].append(desa)
-                        hlavsdesa[TxID][hla]['_desa_mAb'].extend(polymorphic_residues(desa, epitope_db))
-                except IndexError:
-                    logger.info(f'desa {desa} does not exist in the epitope_db')
+            # if rAb | mAb:
+            try:
+                ind = epitope_db.Epitope == desa
+                if rAb & (epitope_db[ind]['AntibodyReactivity'].values[0] == 'Yes'):
+                    hlavsdesa[TxID][hla]['desa_rAb'].append(desa)
+                    hlavsdesa[TxID][hla]['_desa_rAb'].extend(polymorphic_residues(desa, epitope_db)) 
+                else:
+                    hlavsdesa[TxID][hla]['desa_rAb'] = []
+                    hlavsdesa[TxID][hla]['_desa_rAb'] = []                   
+                if mAb & (epitope_db[ind]['mAb'].values[0] == 'Yes'):
+                    hlavsdesa[TxID][hla]['desa_mAb'].append(desa)
+                    hlavsdesa[TxID][hla]['_desa_mAb'].extend(polymorphic_residues(desa, epitope_db))
+                else:
+                    hlavsdesa[TxID][hla]['desa_mAb'] = []
+                    hlavsdesa[TxID][hla]['_desa_mAb'] = []   
+            except IndexError:
+                logger.info(f'desa {desa} does not exist in the epitope_db')
     return hlavsdesa
 
     
@@ -178,7 +184,6 @@ def _3dview_data_preparation(hlavsdesa:dict, style)-> Dict:
                 logger.info(f'{hla}:{pdb_path}: IOError: No such file or directory')
                 continue
             # Create the style data from the decoded contents
-            # style_data = sparser.create_style(pdb_path, style, desa_info=desa_info)
             style_data = sparser.create_style(pdb_path, style, mol_color='chain', desa_info=desa_info)
             _3d_models_data[TxID][hla] = {'model':model_data, 'style':style_data}
     return _3d_models_data
