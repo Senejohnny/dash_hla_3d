@@ -2,11 +2,12 @@ import os
 import pandas as pd
 
 class DESA:
+    """ This is a class that entails the data base [Pandas DataFrame] of all transplants 
+        with DESA and all the related methods that can be applied or update this DataFrame """
     
     def __init__(self, path:str='./data/desa_3d_view.pickle'):
-        path = os.path.expanduser(path)
-        print(os.path.dirname(os.path.abspath(__file__)))
         self.df = pd.read_pickle(path)
+
         
     def __repr__(self):
         return f""" DESA_DB(records={len(self.df)}, columns={self.df.columns}) """
@@ -20,6 +21,13 @@ class DESA:
         ind = self.df.Donor_Type.apply(lambda x: x == donor_type)                          
         self.df = self.df[ind]
         return self
+    
+    def get_tx(self, TxID:int) -> pd.DataFrame:
+        ind = self.df.TransplantID == TxID
+        if sum(ind) == 0:
+            raise ValueError(f'Transplant ID {TxID} does not exist in the datat set')
+        else:
+            return self.df[ind]
         
     def hla_class(self, hla_class):
         if hla_class not in ['I', 'II', 'I,II']:
@@ -40,6 +48,8 @@ class DESA:
         self.df = self.df[ind_t & ind_e]
         return self
 
-desa = DESA()
-# print(desa.df)
-print('getcwd:      ', os.getcwd())
+if __name__ == '__main__':
+    desa = DESA()
+    print(desa.df.columns)
+    print(desa.df.EpvsHLA_Donor)
+# print('getcwd:      ', os.getcwd())

@@ -5,6 +5,9 @@ import pandas as pd
 import warnings
 warnings.filterwarnings("ignore")
 
+# import sys
+# print(sys.path)
+
 # import pymongo
 # from pymongo import MongoClient
 
@@ -17,7 +20,8 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 from flask_caching import Cache
-from app.epitope import Epitope_DB
+from app.epitope import Epitope
+from app.visualisation import VisualiseHLA, vis_cards
 
 from app.analysis_utils import (
     load_desa_db, 
@@ -211,7 +215,7 @@ rAb_switch = daq.BooleanSwitch(
                 labelPosition="top",
             )
 transplant_id = [
-        html.H6('Transplant ID'),
+        html.H6('By Transplant'),
         dbc.Input(id='input-tx', type='text', placeholder="Tx ID")
     ]
 style_dropdown = [
@@ -227,15 +231,29 @@ style_dropdown = [
     )
 ]
 vis_buttion = dbc.Button('Visualise', id='submit-tx-show', n_clicks=0)
+text_area = [
+        html.H6('By Epitopes'),
+        dbc.Textarea(
+                    id='input-textarea',
+                    bs_size='md', 
+                    className="mb-3", 
+                    placeholder="Epitopes for visualisation"
+                )
+]
 Tx_vis_card = dbc.Card(
     [
-        dbc.CardHeader(html.H5('Visualise Transplants:',  className="card-title")),
+        dbc.CardHeader(html.H5('3D Visualissation:',  className="card-title")),
         dbc.CardBody(
             [
                 dbc.Row(
                     [
                         dbc.Col(style_dropdown, style={'padding':5}),
                         dbc.Col(transplant_id, style={'padding':5})
+                    ]
+                ),
+                dbc.Row(
+                    [
+                        dbc.Col(text_area, style={'padding':5})
                     ]
                 ),
                 dbc.Row(
@@ -254,33 +272,14 @@ Tx_vis_card = dbc.Card(
     ]
 )
 ep_vis_buttion = dbc.Button('Visualise', id='submit-hla-ep-show', n_clicks=0)
-ep_vis_card = dbc.Card(
-    [
-        dbc.CardHeader(html.H5('Visualise HLA-Epitopes',  className="card-title")),
-        dbc.CardBody(
-            [
-                dbc.Row(
-                    dbc.Textarea(
-                        id='input-textarea',
-                        bs_size='md', 
-                        className="mb-3", 
-                        placeholder="Epitopes for visualisation"
-                    )
-                ), 
-                dbc.Row(
-                        ep_vis_buttion, style={'padding':5}
-                )
-            ]
-        )
-    ]
-)
+
 
 tab_2_layout = html.Div(
     [
         # dbc.CardHeader(html.H3('Filtering & Visualization')),
         dbc.Row(filter_card, className="w-75 mb-4"),
         dbc.Row(Tx_vis_card, className="w-75 mb-4"),
-        dbc.Row(ep_vis_card, className="w-75 mb-4")
+        # dbc.Row(ep_vis_card, className="w-75 mb-4")
     ]    
 )
 
@@ -337,98 +336,42 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, elli
             size='sm',
             ), f'Records: {len(desa_db)}'
 
-def vis_payload(i, hla, TxID, hlavsdesa, _3d_data):
-    """
-    This wraps the visualisation payload into a function
-    """
-    
-    return [
-            html.H6(
-                    html.Span(f'{hla}',
-                        id=f"tooltip-target-{TxID}-{i}",
-                        style={"textDecoration": "underline", "cursor": "pointer"},
-                        className="card-subtitle",
-                    )
-            ),
-            dbc.Tooltip(
-                f"DESA #{len(hlavsdesa[TxID][hla]['desa'])}: {hlavsdesa[TxID][hla]['desa']}",
-                target=f"tooltip-target-{TxID}-{i}",
-                placement='top'
-            ),
-            div_3dviewer(hla, TxID, _3d_data)
-        ]
-def get_survivaltime_from_df(desa_df, TxID):
-    return desa_df[desa_df['TransplantID'] == TxID]['Survival[Y]'].values[0] 
+
 
 @app.callback(Output('3d-view-loading', 'children'),
               Input('submit-tx-show','n_clicks'),
               [State('input-tx', 'value'),
                State('dropdown_style', 'value'),
                State('rAb-switch', 'on')])
-def show_3d_tx(n_clicks, TxIDs, style, rAb_switch):
+def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch):
     if n_clicks:
         if TxIDs is None:
             return no_update
-        desa_df = load_desa_db()
-        
-        epitope_db = load_epitope_db()
-        TxIDs = list(map(int, TxIDs.split(',')))
-        _3d_data, hlavsdesa = data_3dviewer(desa_df, epitope_db, TxIDs, style=style, rAb=rAb_switch)
-        return [
-                dbc.Card(
-                    [
-                        dbc.CardHeader(
-                            html.H4(f'Transplant ID: {TxID}, Survival Time [Y]: {get_survivaltime_from_df(desa_df, TxID): .2f}', 
-                                    className="card-title")
-                        ),
-                        dbc.CardBody(
-                            [
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                                vis_payload(i, hla, TxID, hlavsdesa, _3d_data), width=6
-                                        ) for i, hla in enumerate(hlavsdesa[TxID].keys())
-                                    ]
-                                )
-                            ]
-                        ),
-                    ],
-                color='secondary', style={'padding': 10}) for TxID in TxIDs 
-            ]
+
+        TxIDs = set(map(int, TxIDs.split(',')))
+        vis = VisualiseHLA()
+        vis_object = vis.from_transplant(TxIDs)
+        return vis_cards(vis_object)
     else:
         return 'No Transplant ID is selected for visualisation'
 
 
 @app.callback(Output('hla-epitope-3d-view-loading', 'children'),
-              Input('submit-hla-ep-show','n_clicks'),
-              [State('input-textarea', 'value'),])
-def show_hla_epitope_3d(n_clicks, epitopes):
+              Input('submit-tx-show','n_clicks'),
+              [State('input-textarea', 'value'),
+               State('dropdown_style', 'value'),
+               State('rAb-switch', 'on')])
+def show_3d_from_epitopes(n_clicks, epitopes, style, rAb_switch):
     if n_clicks:
         if epitopes is None:
             return no_update
-        epitope_db =  Epitope_DB()
-        hlavsep = epitope_db.min_hlavsep(epitopes)
-        return [
-                dbc.Card(
-                    [
-                        # dbc.CardHeader(
-                        #     html.H4(f'', 
-                        #             className="card-title")
-                        # ),
-                        dbc.CardBody(
-                            [
-                                dbc.Row(
-                                    [
-                                        dbc.Col(
-                                                vis_payload(i, hla, TxID, hlavsdesa, _3d_data), width=6
-                                        ) for i, hla in enumerate(hlavsdesa[TxID].keys())
-                                    ]
-                                )
-                            ]
-                        ),
-                    ],
-                color='secondary', style={'padding': 10}) for TxID in TxIDs 
-            ]
+        epitopes = epitopes.replace("'", "").replace("\n", "")
+        epitopes = set(map(str.strip, epitopes.split(',')))
+        print('epitopese', epitopes)
+        vis = VisualiseHLA()
+        vis_object = vis.from_epitopes(epitopes)
+        return vis_cards(vis_object)
+        # return no_update
     else:
         return 'No HLA Epitope is given for visualisation'
 
