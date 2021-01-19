@@ -1,0 +1,15 @@
+[SIMILARITIES]
+
+# Minimum lines number of a similarity.
+# Had to increase this value because the disable function is not working
+# And of course we have some repeated code in tests
+min-similarity-lines=8
+
+# Ignore comments when computing similarities.
+ignore-comments=yes
+
+# Ignore docstrings when computing similarities.
+ignore-docstrings=yes
+
+# Ignore imports when computing similarities.
+ignore-imports=no

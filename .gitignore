@@ -1,6 +1,8 @@
 /hla3d_env
 data/
 
+# virtual environment setting
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

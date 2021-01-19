@@ -1,38 +1,21 @@
-import json
-import tempfile
-import os
-import pandas as pd
+""" The core functionality of the app is here
+    written by Danial Senejohnny """
+# from app.epitope import Epitope
 import warnings
-warnings.filterwarnings("ignore")
-
-# import sys
-# print(sys.path)
-
-# import pymongo
-# from pymongo import MongoClient
-
 import dash
 from dash import no_update
+from dash.dependencies import Input, Output, State
 import dash_daq as daq
-import dash_table
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
-from flask_caching import Cache
-from app.epitope import Epitope
-from app.visualisation import VisualiseHLA, vis_cards
-
-from app.analysis_utils import (
-    load_desa_db, 
-    data_3dviewer, 
-    div_3dviewer,
-    load_epitope_db
-    )
-
-from app.dash_utils import filtering_logic, Header, dashtable_data_compatibility
 from pygit2 import Repository
 
+from app.visualisation import VisualiseHLA, vis_cards
+from app.analysis_utils import load_epitope_db, load_desa_db
+from app.dash_utils import filtering_logic, Header, dashtable_data_compatibility
+
+warnings.filterwarnings("ignore")
 
 # mongo_client = MongoClient('localhost', 27017) # build a new client instance of MongoClient
 # db = mongo_client.desa_database # create new database
@@ -49,17 +32,17 @@ app.config['suppress_callback_exceptions'] = True
 #     "external_url": "https://codepen.io/chriddyp/pen/bWLwgP.css"
 # })
 
-cache = Cache(app.server, config={
-    'CACHE_TYPE': 'redis',
-    # Note that filesystem cache doesn't work on systems with ephemeral
-    # filesystems like Heroku.
-    'CACHE_TYPE': 'filesystem',
-    'CACHE_DIR': 'cache-directory',
+# cache = Cache(app.server, config={
+#     'CACHE_TYPE': 'redis',
+#     # Note that filesystem cache doesn't work on systems with ephemeral
+#     # filesystems like Heroku.
+#     'CACHE_TYPE': 'filesystem',
+#     'CACHE_DIR': 'cache-directory',
 
-    # should be equal to maximum number of users on the app at a single time
-    # higher numbers will store more data in the filesystem / redis cache
-    'CACHE_THRESHOLD': 200
-})
+#     # should be equal to maximum number of users on the app at a single time
+#     # higher numbers will store more data in the filesystem / redis cache
+#     'CACHE_THRESHOLD': 200
+# })
 
 
 
@@ -202,13 +185,13 @@ filter_card = dbc.Card(
         )
     ]
 )
-mAb_switch = daq.BooleanSwitch(
+mAb_switch = daq.BooleanSwitch(        # pylint: disable=not-callable
                 id='mAb-switch',
                 on=False,
                 label="Monoclonal Abs",
                 labelPosition="top",
             )
-rAb_switch = daq.BooleanSwitch(
+rAb_switch = daq.BooleanSwitch(        # pylint: disable=not-callable
                 id='rAb-switch',
                 on=False,
                 label="Reactive Abs",
@@ -342,15 +325,16 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, elli
               Input('submit-tx-show','n_clicks'),
               [State('input-tx', 'value'),
                State('dropdown_style', 'value'),
-               State('rAb-switch', 'on')])
-def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch):
+               State('rAb-switch', 'on'),
+               State('mAb-switch', 'on')])
+def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch, mAb_switch):
     if n_clicks:
         if TxIDs is None:
             return no_update
 
         TxIDs = set(map(int, TxIDs.split(',')))
         vis = VisualiseHLA()
-        vis_object = vis.from_transplant(TxIDs)
+        vis_object = vis.from_transplant(TxIDs, style, rAb_switch, mAb_switch)
         return vis_cards(vis_object)
     else:
         return 'No Transplant ID is selected for visualisation'
@@ -360,16 +344,18 @@ def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch):
               Input('submit-tx-show','n_clicks'),
               [State('input-textarea', 'value'),
                State('dropdown_style', 'value'),
-               State('rAb-switch', 'on')])
-def show_3d_from_epitopes(n_clicks, epitopes, style, rAb_switch):
+               State('rAb-switch', 'on'),
+               State('mAb-switch', 'on')])
+def show_3d_from_epitopes(n_clicks, epitopes, style, rAb_switch, mAb_switch):
     if n_clicks:
         if epitopes is None:
             return no_update
+        print('epitopese before cleaning', epitopes)
         epitopes = epitopes.replace("'", "").replace("\n", "")
         epitopes = set(map(str.strip, epitopes.split(',')))
-        print('epitopese', epitopes)
+        print('epitopese after cleaning', epitopes)
         vis = VisualiseHLA()
-        vis_object = vis.from_epitopes(epitopes)
+        vis_object = vis.from_epitopes(epitopes, style, rAb_switch, mAb_switch)
         return vis_cards(vis_object)
         # return no_update
     else:

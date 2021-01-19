@@ -1,6 +1,14 @@
 import json
 import pandas as pd 
-from app.analysis_utils import load_data, hla_to_filename, get_hla_locus, find_molecule_path, flatten2list, hlavsdesa_donor, _3dview_data_preparation
+from app.analysis_utils import (
+    load_data,
+    hla_to_filename,
+    get_hla_locus,
+    find_molecule_path,
+    flatten2list,
+    hlavsdesa_donor,
+    _3dview_data_preparation
+)
 import pytest 
 import warnings
 warnings.filterwarnings("ignore")
