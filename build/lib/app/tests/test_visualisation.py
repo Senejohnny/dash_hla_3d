@@ -18,7 +18,7 @@ def test_from_epitopes():
     epitopes = set(['105S', '113HN', '114H', '114Q', '116L', '131S', '144QL',
                     '44RME', '62EE', '62QE', '63NI', '65QIA', '66IS', '66IY',
                     '66NH', '70IAQ', '71TD', '74Y', '77D','99S', '9H'])
-    vis = VisualiseHLA()
+    vis = VisualiseHLA(ignore_hla={'B*13:01'})
     vis.from_epitopes(epitopes)
     print(vis.hlavsep)
 

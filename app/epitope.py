@@ -7,7 +7,7 @@ from app.common.logger import logging, get_logger
 from app.common.utilities import (
     get_inventory_hlas,
     flatten2set,
-    # flatten_dict_values,
+    flatten_dict_values,
 )
 
 class Epitope:
@@ -17,6 +17,8 @@ class Epitope:
     def __init__(self, path:str='./data/20201123_EpitopevsHLA.pickle'):
         # the path is consistent if dash_hla_3d/app.py is ran
         self.path = os.path.expanduser(path)
+        # Get hlas with pdb files
+        self.pdb_inventory = flatten_dict_values(get_inventory_hlas('./data/HLAMolecule'))
         self.df = pd.read_pickle(self.path) # pylint: disable=invalid-name
         self._hlavsep = None
         self._hlavsep_df = None
@@ -46,7 +48,7 @@ class Epitope:
         return self
     
     def hlavsep(self, 
-                hla_allel:str='Luminex Alleles', 
+                hla_allel:str='Luminex Alleles',
                 only_with_pdb:bool=False, 
                 ignore_hla:set =set()) -> pd.DataFrame:
         """ returns a DataFrame of HLA vs epitoes
@@ -57,14 +59,10 @@ class Epitope:
         { 'HLA' : {'epitopes'}} """
         
         if only_with_pdb:
-            # Get hlas with pdb files
-            inventory_hlas = flatten2set(get_inventory_hlas('./data/HLAMolecule').values())
             # Luminex Alleles with available pdb files
-            hlas = flatten2set(self.df[hla_allel].values).intersection(inventory_hlas) - ignore_hla
-            print(len(hlas))
+            hlas = flatten2set(self.df[hla_allel].values).intersection(self.pdb_inventory) - ignore_hla
         else:
             hlas = flatten2set(self.df[hla_allel].values)
-            print(len(hlas))
         
         hlavsep_dict = defaultdict(list)
         for hla in hlas:
@@ -78,25 +76,32 @@ class Epitope:
     def min_hlavsep(self, epitopes:set, ignore_hla:set=set()) -> dict:
         """ Returns the HLA vs epitope dictionary
             based on minimum number of HLA possible
+            ignore_hla: ignores some hla
             format { 'HLA' : {'epitopes'} }
         """
         # Deep copy of epitopes set for later epitope removal
         _epitopes = epitopes.copy()
         hlavsep_df = self.hlavsep(only_with_pdb=True, ignore_hla=ignore_hla)
         hla_ep = defaultdict(set)
-        for _ in range(8):
+        for _ in range(10):
             intersect = hlavsep_df.Epitope.apply(
                 lambda x: len(x.intersection(_epitopes))
             )
             # find the indexes with maximum value
-            ind_maxes = intersect == intersect.max()
-            hlavsep_max_df = hlavsep_df[ind_maxes]
-            max_hla = hlavsep_max_df.HLA.values.tolist()[0]
-            ind_max = hlavsep_max_df.HLA == max_hla
-            set_of_ep = hlavsep_max_df[ind_max].Epitope.values[0].intersection(_epitopes)
-            hla_ep[max_hla] = set_of_ep
-            _epitopes.difference_update(set_of_ep)
-        self.log.info(f' Epitopes :{_epitopes} could not be assigned', extra={'messagePrefix': 'Epitope.min_hlavsep'})
+            value_max = intersect.max()
+            if value_max:
+                ind_maxes = intersect == value_max
+                hlavsep_max_df = hlavsep_df[ind_maxes]
+                max_hla = hlavsep_max_df.HLA.values.tolist()[0]
+                ind_max = hlavsep_max_df.HLA == max_hla
+                set_of_ep = hlavsep_max_df[ind_max].Epitope.values[0].intersection(_epitopes)
+                hla_ep[max_hla] = set_of_ep
+                _epitopes.difference_update(set_of_ep)
+        if _epitopes:
+            self.log.info(
+                f'Epitopes :{_epitopes} could not be assigned', 
+                extra={'messagePrefix': 'Epitope.min_hlavsep'}
+            )
         return dict(hla_ep)
 
     def epvshla2hlavsep(self, epvshla:dict) -> dict:

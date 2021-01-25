@@ -213,7 +213,8 @@ style_dropdown = [
                 placeholder="Style",
     )
 ]
-vis_buttion = dbc.Button('Visualise', id='submit-tx-show', n_clicks=0)
+vis_buttion_tx = dbc.Button('Visualise Transplant', id='submit-tx-show', n_clicks=0)
+vis_buttion_epitope = dbc.Button('Visualise Epitopes', id='submit-ep-show', n_clicks=0)
 text_area = [
         html.H6('By Epitopes'),
         dbc.Textarea(
@@ -247,7 +248,8 @@ Tx_vis_card = dbc.Card(
                 ),
                 dbc.Row(
                     [
-                        dbc.Col(vis_buttion, style={'padding':5})
+                        dbc.Col(vis_buttion_tx, style={'padding':5}),
+                        dbc.Col(vis_buttion_epitope, style={'padding':5})
                     ]
                 )
             ]
@@ -329,11 +331,11 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, elli
                State('mAb-switch', 'on')])
 def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch, mAb_switch):
     if n_clicks:
-        if TxIDs is None:
+        if TxIDs == None :
             return no_update
 
         TxIDs = set(map(int, TxIDs.split(',')))
-        vis = VisualiseHLA()
+        vis = VisualiseHLA(ignore_hla={'B*13:01'})
         vis_object = vis.from_transplant(TxIDs, style, rAb_switch, mAb_switch)
         return vis_cards(vis_object)
     else:
@@ -341,7 +343,7 @@ def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch, mAb_switch):
 
 
 @app.callback(Output('hla-epitope-3d-view-loading', 'children'),
-              Input('submit-tx-show','n_clicks'),
+              Input('submit-ep-show','n_clicks'),
               [State('input-textarea', 'value'),
                State('dropdown_style', 'value'),
                State('rAb-switch', 'on'),
@@ -354,7 +356,7 @@ def show_3d_from_epitopes(n_clicks, epitopes, style, rAb_switch, mAb_switch):
         epitopes = epitopes.replace("'", "").replace("\n", "")
         epitopes = set(map(str.strip, epitopes.split(',')))
         print('epitopese after cleaning', epitopes)
-        vis = VisualiseHLA()
+        vis = VisualiseHLA(ignore_hla={'B*13:01'})
         vis_object = vis.from_epitopes(epitopes, style, rAb_switch, mAb_switch)
         return vis_cards(vis_object)
         # return no_update

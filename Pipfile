@@ -5,6 +5,8 @@ name = "pypi"
 
 [packages]
 pylint = "*"
+ipykernel = "*"
+hla3d = "*"
 
 [dev-packages]
 pytest = "*"

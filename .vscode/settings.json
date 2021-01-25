@@ -1,3 +1,4 @@
 {
-    "python.pythonPath": "/Users/Danial/.local/share/virtualenvs/dash_hla_3d-ZSEserBq/bin/python"
+    "python.pythonPath": "/Users/Danial/.local/share/virtualenvs/dash_hla_3d-ZSEserBq/bin/python",
+    "jupyter.jupyterServerType": "local"
 }

@@ -18,20 +18,20 @@ from app.common.utilities import (
     find_molecule_path,
 )
 
-
-
 SERVICE_NAME = 'VisualiseHLA'
 
 class VisualiseHLA:
 
-    def __init__(self):
+    def __init__(self, ignore_hla:set=set(),  path_desa=None, path_epitope=None):
         """ uses DESA and Epitope Classes """
-
-        self.DESA = DESA()
-        self.Epitope = Epitope()
+        self.ignore_hla = ignore_hla
+        self.desa = DESA(path_desa) if path_desa else DESA()
+        self.epitope = Epitope(path_epitope) if path_epitope else Epitope()
+        self.log = get_logger(SERVICE_NAME, logging.INFO)
         self.hlavsep = None
         self.txvshlavsep = None
-        self.log = get_logger(SERVICE_NAME, logging.INFO)
+        self.vis_data_from_transplants = None
+        
 
     @staticmethod
     def _molecule_viewer(model:dict, style:dict, opacity=0):
@@ -88,7 +88,21 @@ class VisualiseHLA:
     def _get_min_hlavsep(self, epitopes:set) -> dict:
         if not isinstance(epitopes, set):
             raise TypeError('Epitopes should be given as a set')
-        return self.Epitope.min_hlavsep(epitopes)
+        return self.epitope.min_hlavsep(epitopes, ignore_hla=self.ignore_hla)
+
+    def _keep_hla_with_pdb(self, hlavsep:dict) -> dict:
+        """
+        Keeps the HLA's that a pdb file is available in the inventory.
+        Gets and returns HLA vs Epitope dictionary
+        """
+        for hla in hlavsep.__iter__():
+            if hla not in self.epitope.pdb_inventory:
+                self.log.warning(
+                    f'HLA {hla} is removed: No relevant pdb file found',
+                    extra={'messagePrefix': 'Filtering HLA not in inventory'}
+                )
+                del hlavsep[hla]
+        return hlavsep
 
     def _hlavsep_poly(
                 self,
@@ -99,7 +113,7 @@ class VisualiseHLA:
         """ An internal method to get hla vs polymorphic epitopes dictionary from
         hla vs epitopes dictionary  """
 
-        ep_db = self.Epitope.df
+        ep_db = self.epitope.df
         _hlavsep = defaultdict(lambda: defaultdict(list))
         for hla in hlavsep.keys():
             for ep in hlavsep[hla]:
@@ -134,7 +148,7 @@ class VisualiseHLA:
 
         self.log.info(f'Start with Epitopes {epitopes}', extra={'messagePrefix': 'from_epitopes'})
         _min_hlavsep = self._get_min_hlavsep(epitopes)
-        self.log.info(f'min HLA vs Epitope is:{_min_hlavsep.keys()}', extra={'messagePrefix': 'from_epitopes'})
+        self.log.info(f'min HLA vs Epitope is:{list(_min_hlavsep.keys())}', extra={'messagePrefix': 'from_epitopes'})
         hlavspolyep = self._hlavsep_poly(_min_hlavsep, rAb, mAb)
         vis_data = self._get_vis_data_from_pdb(hlavspolyep, style, 'from_epitopes')
         self.vis_data_from_epitopes = vis_data
@@ -161,9 +175,11 @@ class VisualiseHLA:
         txvshlavsep = defaultdict(dict)
 
         for TxID in TxIDs:
-            df_tx = self.DESA.get_tx(TxID)
+            df_tx = self.desa.get_tx(TxID)
             epvshla = df_tx.EpvsHLA_Donor.values[0]
-            hlavsep = self.Epitope.epvshla2hlavsep(epvshla)  # call a method in Epitope class
+            hlavsep = self.epitope.epvshla2hlavsep(epvshla)
+            # Keep HLA's for which a pdb file exist
+            hlavsep = self._keep_hla_with_pdb(hlavsep)
             txvshlavsep[TxID] = hlavsep
             hlavspolyep = self._hlavsep_poly(hlavsep, rAb, mAb)
             vis_data[TxID] = self._get_vis_data_from_pdb(hlavspolyep, style, 'from_transplants')
@@ -211,7 +227,7 @@ def _vis_card(vis_object, TxID:int=None):
     if TxID:
         card_header = dbc.CardHeader(
                                     html.H4(f""" Transplant ID: {TxID},
-                                            Survival Time [Y]: {vis_object.DESA.get_tx(TxID)['Survival[Y]'].values[0]: .2f}
+                                            Survival Time [Y]: {vis_object.desa.get_tx(TxID)['Survival[Y]'].values[0]: .2f}
                                             """
                                             , className="card-title"
                                     )

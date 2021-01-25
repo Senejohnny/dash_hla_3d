@@ -19,6 +19,11 @@ def flatten2set(object) -> set:
 
     return set(flatten2list(object))
 
+def flatten_dict_values(dictionary:dict) -> set:
+    """ This function flattens objects in a nested structure and returns a set"""
+
+    return flatten2set(dictionary.values())
+
 def get_hla_locus(hla:str) -> str:
     """ get the long locus (max 3 letters of gene) of hla """
 
@@ -74,7 +79,9 @@ def get_hla_from_filename(filename: str):
 
 def get_inventory_hlas(base_dir: str) -> dict:
     """ This function returns all the hla & locus
-        available in the hla inventory """
+        available in the hla inventory
+        base_dir: should be absolute path
+        """
 
     hla_dict = defaultdict(set)
     with os.scandir(base_dir) as entries:

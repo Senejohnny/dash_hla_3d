@@ -1,6 +1,19 @@
 """ test scripts for app.epitopes.py """
-from app.epitope import Epitope 
+import pytest
+from app.epitope import Epitope
 from app.common.utilities import flatten2set
+import sys
+print(sys.path)
+
+
+@pytest.mark.parametrize('test_input, expected_output',
+[
+    ({'3C':'A*12:01', '25I':'A*12:01'}, {'A*12:01': set(['3C', '25I'])}),
+
+])
+def test_epvshla2hlavsep(test_input, expected_output):
+    assert Epitope().epvshla2hlavsep(test_input) == expected_output
+
 
 
 def test_min_hlavsep():
@@ -9,9 +22,8 @@ def test_min_hlavsep():
                     '66NH', '70IAQ', '71TD', '74Y', '77D','99S', '9H'])
     epitope = Epitope()
     _min_hlavsep = epitope.min_hlavsep(epitopes)
+    # print(epitope.path)
     print(_min_hlavsep)
-    # for hla in _min_hlavsep.keys():
-    #     assert hla in set(['B*55:01', 'A*31:01', 'B*37:01', 'A*23:02', 'B*13:02'])
     assert flatten2set(_min_hlavsep.values()).intersection(epitopes) == epitopes
 
 test_min_hlavsep()
