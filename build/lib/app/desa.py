@@ -5,7 +5,7 @@ class DESA:
     """ This is a class that entails the data base [Pandas DataFrame] of all transplants
         with DESA and all the related methods that can be applied or update this DataFrame """
     
-    def __init__(self, path:str='./data/desa_3d_view.pickle'):
+    def __init__(self, path:str='../data/desa_3d_view.pickle'):
         self.df = pd.read_pickle(path)
 
     def __repr__(self):

@@ -1,6 +1,8 @@
+""" Some utility functions """
 import os
+from collections import defaultdict
 import regex as re
-from typing import Set
+# from typing import Set
 
 def flatten2list(object):
     """ This function flattens objects in a nested structure and retu"""
@@ -16,11 +18,6 @@ def flatten2set(object) -> set:
     """ This function flattens objects in a nested structure and returns a set"""
 
     return set(flatten2list(object))
-
-def flatten_dict_values(dictionary:dict) -> set:
-    """ This function flattens objects in a nested structure and returns a set"""
-
-    return flatten2set(dictionary.values())
 
 def get_hla_locus(hla:str) -> str:
     """ get the long locus (max 3 letters of gene) of hla """
@@ -49,8 +46,8 @@ def hla_to_filename(hla:str):
 
 
 def find_molecule_path(locus:str, filename:str) -> str:
-    """This function makes use of the locus and filename resulted from 'hla_to_filename' function 
-        to find the path to the relevant file .pdb file """
+    """This function makes use of the locus and filename resulted from 
+    'hla_to_filename' function to find the path to the relevant file .pdb file """
     
     path = os.path.expanduser(f'./data/HLAMolecule/{locus[0:2]}') # get until the first 2 character of locus if exist
     pdb_files = [file for file in os.listdir(path) if filename.split('_V1.pdb')[0] in file ]
@@ -63,5 +60,26 @@ def dict_depth(my_dict):
     """ function to find the depth of dictionary """ 
     
     if isinstance(my_dict, dict): 
-        return 1 + (max(map(dict_depth, my_dict.values() )) if my_dict else 0 ) 
+        return 1 + (max(map(dict_depth, my_dict.values() )) if my_dict else 0 )
     return 0
+
+
+def get_hla_from_filename(filename: str):
+    splits = filename.split('-')
+    hla_set = set()
+    for split in splits:
+        split = split.split('_')
+        hla_set.add(split[0] + '*' + ':'.join(split[1:3]))
+    return hla_set
+
+def get_inventory_hlas(base_dir: str) -> dict:
+    """ This function returns all the hla & locus
+        available in the hla inventory """
+
+    hla_dict = defaultdict(set)
+    with os.scandir(base_dir) as entries:
+        for entry in entries:
+            if entry.is_dir():
+                for file in os.scandir(entry.path):
+                    hla_dict[entry.name].update(get_hla_from_filename(file.name))
+    return hla_dict

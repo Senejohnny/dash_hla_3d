@@ -18,15 +18,17 @@ from app.common.utilities import (
     find_molecule_path,
 )
 
+
+
 SERVICE_NAME = 'VisualiseHLA'
 
 class VisualiseHLA:
 
-    def __init__(self, path_desa=None, path_epitope=None):
+    def __init__(self):
         """ uses DESA and Epitope Classes """
 
-        self.DESA = DESA(path_desa) if path_desa else DESA()
-        self.Epitope = Epitope(path_epitope) if path_epitope else Epitope()
+        self.DESA = DESA()
+        self.Epitope = Epitope()
         self.hlavsep = None
         self.txvshlavsep = None
         self.log = get_logger(SERVICE_NAME, logging.INFO)

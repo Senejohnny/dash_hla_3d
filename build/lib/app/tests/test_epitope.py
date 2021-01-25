@@ -1,6 +1,6 @@
 """ test scripts for app.epitopes.py """
 from app.epitope import Epitope 
-from app.utilities import flatten2set
+from app.common.utilities import flatten2set
 
 
 def test_min_hlavsep():
