@@ -14,7 +14,7 @@ class Epitope:
     """ This is a class that entails the data base [Pandas DataFrame] of all epitopes and
         all the related methods tha can be applied to this data base  """
 
-    def __init__(self, path:str='./data/20201123_EpitopevsHLA.pickle'):
+    def __init__(self, path:str='./data/EpitopevsHLA.pickle'):
         # the path is consistent if dash_hla_3d/app.py is ran
         self.path = os.path.expanduser(path)
         # Get hlas with pdb files
@@ -26,6 +26,25 @@ class Epitope:
 
     def __repr__(self):
         return f""" Epitope_DB(records={len(self.df)}, columns={self.df.columns}) """
+
+    def filter_mAb(self):
+        ind = self.df.mAb == 'Yes'
+        self.df = self.df[ind]
+        return self
+    
+    def is_IgG(self):
+        self.filter_isotype()
+        if len(self.df != 0):
+            return True
+        else:
+            return False
+
+
+
+    def filter_isotype(self, isotype:str='IgG'):
+        ind = self.df.isotype.apply(lambda x: isotype in x)
+        self.df = self.df[ind]
+        return self
 
     def get_epitopes(self, value:Union[str, List[str]]):
         """ get epitope info from the df
@@ -47,7 +66,7 @@ class Epitope:
         self.df = self.df[ind]
         return self
     
-    def hlavsep(self, 
+    def hlavsep(self,
                 hla_allel:str='Luminex Alleles',
                 only_with_pdb:bool=False, 
                 ignore_hla:set =set()) -> pd.DataFrame:
@@ -117,15 +136,17 @@ if __name__ == '__main__':
     import json
     # print(sys.path)
     epitope = Epitope()
-    basepath = os.path.expanduser('./data/HLAMolecule')
-    # print('base path is as follow', basepath)
-    epitopes = set(['105S', '113HN', '114H', '114Q', '116L', '131S', '144QL',
-                    '44RME', '62EE', '62QE', '63NI', '65QIA', '66IS', '66IY',
-                    '66NH', '70IAQ', '71TD', '74Y', '77D','99S', '9H'])
+    print(epitope.filter_mAb().filter_isotype().df)
+#     basepath = os.path.expanduser('./data/HLAMolecule')
+#     # print('base path is as follow', basepath)
+#     epitopes = set(['105S', '113HN', '114H', '114Q', '116L', '131S', '144QL',
+#                     '44RME', '62EE', '62QE', '63NI', '65QIA', '66IS', '66IY',
+#                     '66NH', '70IAQ', '71TD', '74Y', '77D','99S', '9H'])
                     
-    hlavsep = epitope.min_hlavsep(epitopes, ignore_hla=set(['B*13:01', 'B*13:02']))
-    for key in hlavsep.__iter__():
-        hlavsep[key] = str(hlavsep[key])
-    json_obj = json.dumps(hlavsep, indent=4)
-    print(json_obj)
+#     hlavsep = epitope.min_hlavsep(epitopes, ignore_hla=set(['B*13:01', 'B*13:02']))
+#     for key in hlavsep.__iter__():
+#         hlavsep[key] = str(hlavsep[key])
+#     json_obj = json.dumps(hlavsep, indent=4)
+#     print(json_obj)
+# print(epitope.df)
 

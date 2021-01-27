@@ -95,7 +95,7 @@ class VisualiseHLA:
         Keeps the HLA's that a pdb file is available in the inventory.
         Gets and returns HLA vs Epitope dictionary
         """
-        for hla in hlavsep.__iter__():
+        for hla in list(hlavsep):
             if hla not in self.epitope.pdb_inventory:
                 self.log.warning(
                     f'HLA {hla} is removed: No relevant pdb file found',
@@ -121,10 +121,10 @@ class VisualiseHLA:
                 _hlavsep[hla]['_desa'].extend(polymorphic_residues(ep, ep_db))
                 try:
                     ind = ep_db.Epitope == ep
-                    if rAb & (ep_db[ind]['AntibodyReactivity'].values[0] == 'Yes'):
-                        _hlavsep[hla]['desa_rAb'].append(ep)
-                        _hlavsep[hla]['_desa_rAb'].extend(polymorphic_residues(ep, ep_db))
-                    if mAb & (ep_db[ind]['mAb'].values[0] == 'Yes'):
+                    # if rAb & self.epitope.get_epitopes(ep). (ep_db[ind]['AntibodyReactivity'].values[0] == 'Yes'):
+                    #     _hlavsep[hla]['desa_rAb'].append(ep)
+                    #     _hlavsep[hla]['_desa_rAb'].extend(polymorphic_residues(ep, ep_db))
+                    if mAb & (ep_db[ind]['mAb'].values[0] == 'Yes') & (ep_db[ind]['isotype'].values[0] == 'IgG'):
                         _hlavsep[hla]['desa_mAb'].append(ep)
                         _hlavsep[hla]['_desa_mAb'].extend(polymorphic_residues(ep, ep_db))
                 except IndexError:

@@ -191,12 +191,12 @@ mAb_switch = daq.BooleanSwitch(        # pylint: disable=not-callable
                 label="Monoclonal Abs",
                 labelPosition="top",
             )
-rAb_switch = daq.BooleanSwitch(        # pylint: disable=not-callable
-                id='rAb-switch',
-                on=False,
-                label="Reactive Abs",
-                labelPosition="top",
-            )
+# rAb_switch = daq.BooleanSwitch(        # pylint: disable=not-callable
+#                 id='rAb-switch',
+#                 on=False,
+#                 label="Reactive Abs",
+#                 labelPosition="top",
+#             )
 transplant_id = [
         html.H6('By Transplant'),
         dbc.Input(id='input-tx', type='text', placeholder="Tx ID")
@@ -243,7 +243,7 @@ Tx_vis_card = dbc.Card(
                 dbc.Row(
                     [
                         dbc.Col(mAb_switch, style={'padding':5}),
-                        dbc.Col(rAb_switch, style={'padding':5})
+                        # dbc.Col(rAb_switch, style={'padding':5})
                     ]
                 ),
                 dbc.Row(
@@ -327,16 +327,15 @@ def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, elli
               Input('submit-tx-show','n_clicks'),
               [State('input-tx', 'value'),
                State('dropdown_style', 'value'),
-               State('rAb-switch', 'on'),
                State('mAb-switch', 'on')])
-def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch, mAb_switch):
+def show_3d_from_transplants(n_clicks, TxIDs, style, mAb_switch):
     if n_clicks:
         if TxIDs == None :
             return no_update
 
         TxIDs = set(map(int, TxIDs.split(',')))
         vis = VisualiseHLA(ignore_hla={'B*13:01'})
-        vis_object = vis.from_transplant(TxIDs, style, rAb_switch, mAb_switch)
+        vis_object = vis.from_transplant(TxIDs, style, mAb=mAb_switch)
         return vis_cards(vis_object)
     else:
         return 'No Transplant ID is selected for visualisation'
@@ -346,18 +345,15 @@ def show_3d_from_transplants(n_clicks, TxIDs, style, rAb_switch, mAb_switch):
               Input('submit-ep-show','n_clicks'),
               [State('input-textarea', 'value'),
                State('dropdown_style', 'value'),
-               State('rAb-switch', 'on'),
                State('mAb-switch', 'on')])
-def show_3d_from_epitopes(n_clicks, epitopes, style, rAb_switch, mAb_switch):
+def show_3d_from_epitopes(n_clicks, epitopes, style, mAb_switch):
     if n_clicks:
         if epitopes is None:
             return no_update
-        print('epitopese before cleaning', epitopes)
         epitopes = epitopes.replace("'", "").replace("\n", "")
         epitopes = set(map(str.strip, epitopes.split(',')))
-        print('epitopese after cleaning', epitopes)
         vis = VisualiseHLA(ignore_hla={'B*13:01'})
-        vis_object = vis.from_epitopes(epitopes, style, rAb_switch, mAb_switch)
+        vis_object = vis.from_epitopes(epitopes, style, mAb=mAb_switch)
         return vis_cards(vis_object)
         # return no_update
     else:
