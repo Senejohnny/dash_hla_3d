@@ -12,7 +12,7 @@ import dash_html_components as html
 from pygit2 import Repository
 
 from app.visualisation import VisualiseHLA, vis_cards
-from app.analysis_utils import load_epitope_db, load_desa_db
+from app.desa import DESA
 from app.dash_utils import filtering_logic, Header, dashtable_data_compatibility
 
 warnings.filterwarnings("ignore")
@@ -77,7 +77,7 @@ app.layout = dbc.Container([
                         width={"size": 8, "order": 2, "offset": 0}
                     ),
             ])), 
-            dbc.Tab(label='3D View', 
+            dbc.Tab(label='Visualise Transplants',
                     children=html.Div([
                         dcc.Loading(
                             id='3d-view-loading', 
@@ -85,7 +85,7 @@ app.layout = dbc.Container([
                         )
                     ]),
             ),
-            dbc.Tab(label='HLA-Epitope 3D View', 
+            dbc.Tab(label='Visualise Epitopes',
                     children=html.Div([
                         dcc.Loading(
                             id='hla-epitope-3d-view-loading', 
@@ -119,7 +119,7 @@ hla_class = [
                 options=[
                     {'label': 'I', 'value': 'I'},
                     {'label': 'II', 'value': 'II'},
-                    {'label': 'I & II', 'value': 'III'}
+                    {'label': 'I & II', 'value': 'I,II'}
                 ],
                 placeholder="HLA Class",
             ),
@@ -155,7 +155,7 @@ ellipro_score = [
 ]
 filter_card = dbc.Card(
     [
-        dbc.CardHeader(html.H5('Filtering',  className="card-title")),
+        dbc.CardHeader(html.H5('Data Base',  className="card-title")),
         dbc.CardBody(
             [
                 dbc.Row(
@@ -167,11 +167,6 @@ filter_card = dbc.Card(
                     [
                         dbc.Col(donor_type,  style={'padding':5}),
                         dbc.Col(sortby_dropdown,  style={'padding':5})
-                    ]
-                ),
-                dbc.Row(
-                    [
-                        dbc.Col(ellipro_score,  style={'padding':5})
                     ]
                 ),
                 dbc.Row(
@@ -218,16 +213,21 @@ text_area = [
         html.H6('By Epitopes'),
         dbc.Textarea(
                     id='input-textarea',
-                    bs_size='md', 
-                    className="mb-3", 
+                    bs_size='md',
+                    className="mb-3",
                     placeholder="Epitopes for visualisation"
                 )
 ]
 Tx_vis_card = dbc.Card(
     [
-        dbc.CardHeader(html.H5('3D Visualissation:',  className="card-title")),
+        dbc.CardHeader(html.H5('3D Visualisation:',  className="card-title")),
         dbc.CardBody(
             [
+                dbc.Row(
+                    [
+                        dbc.Col(ellipro_score,  style={'padding':5})
+                    ]
+                ),
                 dbc.Row(
                     [
                         dbc.Col(style_dropdown, style={'padding':5}),
@@ -242,7 +242,6 @@ Tx_vis_card = dbc.Card(
                 dbc.Row(
                     [
                         dbc.Col(mAb_switch, style={'padding':5}),
-                        # dbc.Col(rAb_switch, style={'padding':5})
                     ]
                 ),
                 dbc.Row(
@@ -270,8 +269,6 @@ tab_2_layout = html.Div(
 # ######################################################################
 # Callbacks
 # ######################################################################
-
-
 @app.callback(Output('tabs-children-content', 'children'),
               [Input('tabs-children', 'active_tab')])
 def render_content(tab):
@@ -293,72 +290,76 @@ def render_content(tab):
     # elif tab == 'tab-1-3':
     #     return None
 
-
-
+###############################################################
+# Callback Table
+###############################################################
 @app.callback([Output('tx-table', 'children'),
                Output('tx-table-records', 'children')],
               [Input('show-table','n_clicks'),],
               [State('dropdown_sortby', 'value'),
                State('dropdown_class', 'value'),
                State('input_hla', 'value'),
-               State('dropdown_donor_type', 'value'),
-               State('dropdown_elli_pro', 'value')])
-def update_output_data(n_clicks, sort_failure, sort_class, hla, donor_type, ellipro_score):
+               State('dropdown_donor_type', 'value'),])
+def table(n_clicks, sort_by, hla_class, hla, donor_type):
     if n_clicks == 0:
         return html.P('Click on "Show Table" button to see the table'), None
-    else:
-        desa_db = load_desa_db()
-        ep_db = load_epitope_db()
-        desa_db = filtering_logic(desa_db, ep_db, sort_failure, sort_class, hla, donor_type, ellipro_score)
-        df_print = dashtable_data_compatibility(desa_db)
-        return dbc.Table.from_dataframe(
-            df_print, 
-            bordered=True,
-            dark=True,
-            hover=True,
-            striped=True,
-            size='sm',
-            ), f'Records: {len(desa_db)}'
+    desa = DESA()
+    desa_df = filtering_logic(desa, sort_by, hla_class, hla, donor_type)
+    desa_df = dashtable_data_compatibility(desa_df)
+    return dbc.Table.from_dataframe(
+        desa_df, 
+        bordered=True,
+        dark=True,
+        hover=True,
+        striped=True,
+        size='sm',
+        ), f'Records: {len(desa_df)}'
 
-
-
+###############################################################
+# Callback Visualisation from Transplants
+###############################################################
 @app.callback(Output('3d-view-loading', 'children'),
               Input('submit-tx-show','n_clicks'),
               [State('input-tx', 'value'),
                State('dropdown_style', 'value'),
-               State('mAb-switch', 'on')])
-def show_3d_from_transplants(n_clicks, TxIDs, style, mAb_switch):
+               State('mAb-switch', 'on'),
+               State('dropdown_elli_pro', 'value')])
+def visualise_from_transplants(n_clicks, TxIDs, style, mAb_switch, elliproscore):
     if n_clicks:
         if TxIDs == None :
             return no_update
-
+        style = 'sphere' if style == None else style
         TxIDs = set(map(int, TxIDs.split(',')))
         vis = VisualiseHLA(ignore_hla={'B*13:01'})
-        vis_object = vis.from_transplant(TxIDs, style, mAb=mAb_switch)
+        vis_object = vis.from_transplant(TxIDs, style, mAb=mAb_switch, elliproscore=elliproscore)
         return vis_cards(vis_object)
     else:
         return 'No Transplant ID is selected for visualisation'
 
-
+###############################################################
+# Callback Visualisation from Epitopes
+###############################################################
 @app.callback(Output('hla-epitope-3d-view-loading', 'children'),
               Input('submit-ep-show','n_clicks'),
               [State('input-textarea', 'value'),
                State('dropdown_style', 'value'),
-               State('mAb-switch', 'on')])
-def show_3d_from_epitopes(n_clicks, epitopes, style, mAb_switch):
+               State('mAb-switch', 'on'),
+               State('dropdown_elli_pro', 'value')])
+def visualise_from_epitopes(n_clicks, epitopes, style, mAb_switch, elliproscore):
     if n_clicks:
         if epitopes is None:
             return no_update
+        style = 'sphere' if style == None else style
         epitopes = epitopes.replace("'", "").replace("\n", "")
         epitopes = set(map(str.strip, epitopes.split(',')))
-        vis = VisualiseHLA(ignore_hla={'B*13:01'})
-        vis_object = vis.from_epitopes(epitopes, style, mAb=mAb_switch)
+        vis = VisualiseHLA(ignore_hla={'B*13:01', 'DQB1*06:03'})
+        vis_object = vis.from_epitopes(epitopes, style, mAb=mAb_switch, elliproscore=elliproscore)
         return vis_cards(vis_object)
         # return no_update
     else:
         return 'No HLA Epitope is given for visualisation'
 
-
+###############################################################
 if __name__ == '__main__':
     if Repository('.').head.shorthand in ['master']:
         debug = False

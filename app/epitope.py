@@ -27,6 +27,14 @@ class Epitope:
     def __repr__(self):
         return f""" Epitope_DB(records={len(self.df)}, columns={self.df.columns}) """
 
+    @staticmethod
+    def epvshla2hlavsep(epvshla:dict) -> dict:
+        """ Transform an ep vs hla dict 2 hla vs ep dict """
+        hlavsep = defaultdict(set)
+        for epitope, hla in epvshla.items():
+            hlavsep[hla].add(epitope)
+        return hlavsep
+    
     def filter_mAb(self):
         ind = self.df.mAb == 'Yes'
         self.df = self.df[ind]
@@ -66,7 +74,7 @@ class Epitope:
     
     def hlavsep(self,
                 hla_allel:str='Luminex Alleles',
-                only_with_pdb:bool=False, 
+                only_with_pdb:bool=False,
                 ignore_hla:set =set()) -> pd.DataFrame:
         """ returns a DataFrame of HLA vs epitoes
         hla_allel [default is 'Luminex Alleles']: determines the allel type
@@ -116,17 +124,11 @@ class Epitope:
                 _epitopes.difference_update(set_of_ep)
         if _epitopes:
             self.log.info(
-                f'Epitopes :{_epitopes} could not be assigned', 
+                f'Epitopes :{_epitopes} could not be assigned',
                 extra={'messagePrefix': 'Epitope.min_hlavsep'}
             )
         return dict(hla_ep)
 
-    def epvshla2hlavsep(self, epvshla:dict) -> dict:
-        """ Transform an ep vs hla dict 2 hla vs ep dict """
-        hlavsep = defaultdict(set)
-        for epitope, hla in epvshla.items():
-            hlavsep[hla].add(epitope)
-        return hlavsep
 
 if __name__ == '__main__':
     import sys

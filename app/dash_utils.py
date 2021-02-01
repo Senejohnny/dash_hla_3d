@@ -1,58 +1,75 @@
+""" some dash utility functions """
 import io 
 import base64
 import pandas as pd
-
-
-import dash
 from dash import no_update
 import dash_bootstrap_components as dbc
 import dash_core_components as dcc
 import dash_html_components as html
+from app.desa import DESA
 
-def filtering_logic(df,
-                    ep_db,
-                    sort_failure, 
-                    sort_class, 
-                    hla, 
-                    donor_type,
-                    ellipro_score):
-    """ This function wraps all the logic pertain to
-    filtering the table """
-    if sort_failure:
-        if sort_failure == 'desa':  
-            df = df.sort_values(by='#DESA', ascending=False)
+# def filtering_logic(df,
+#                     ep_db,
+#                     sort_failure, 
+#                     sort_class, 
+#                     hla, 
+#                     donor_type,
+#                     ellipro_score):
+#     """ This function wraps all the logic pertain to
+#     filtering the table """
+#     if sort_failure:
+#         if sort_failure == 'desa':  
+#             df = df.sort_values(by='#DESA', ascending=False)
 
-        if sort_failure == 'early_failure': 
-            ind_T_early = df['Survival[Y]'].apply(lambda x: x < 1/4)
-            ind_E_early = df['Failure'].apply(lambda x: x == 1)
-            df = df[ind_T_early & ind_E_early]
+#         if sort_failure == 'early_failure': 
+#             ind_T_early = df['Survival[Y]'].apply(lambda x: x < 1/4)
+#             ind_E_early = df['Failure'].apply(lambda x: x == 1)
+#             df = df[ind_T_early & ind_E_early]
             
-        if sort_failure == 'late_surviving': 
-            ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10) # Still have Kidney after 10 years
-            ind_E_late = df['Failure'].apply(lambda x: x == 0 | x == 2)
-            df = df[ind_T_late & ind_E_late]
-    if sort_class:
-        ind = df['Donor_HLA_Class'].apply(lambda x: x == {'I':'I', 'II': 'II', 'III': 'I,II'}.get(sort_class))
-        df = df[ind]
+#         if sort_failure == 'late_surviving': 
+#             ind_T_late = df['Survival[Y]'].apply(lambda x: x > 10) # Still have Kidney after 10 years
+#             ind_E_late = df['Failure'].apply(lambda x: x == 0 | x == 2)
+#             df = df[ind_T_late & ind_E_late]
+#     if sort_class:
+#         ind = df['Donor_HLA_Class'].apply(lambda x: x == {'I':'I', 'II': 'II', 'III': 'I,II'}.get(sort_class))
+#         df = df[ind]
 
-    if hla:
-        ind = df['Donor_HLA'].apply(lambda x: hla in x)
-        df = df[ind]
+#     if hla:
+#         ind = df['Donor_HLA'].apply(lambda x: hla in x)
+#         df = df[ind]
+#     if donor_type:
+#         ind = df['Donor_Type'].apply(lambda x: x == donor_type)
+#         df = df[ind]
+#     if ellipro_score:
+#         try:
+#             df.drop('EpvsHLA_Donor_filt', axis=1)
+#         except:
+#             pass
+#         ind = ep_db['ElliPro Score'].apply(lambda x: x in ellipro_score)
+#         ep_ellipro = ep_db[ind].Epitope.values.tolist()
+#         df['EpvsHLA_Donor_filt'] = df.EpvsHLA_Donor.apply(lambda x: 
+#                         {key:value for key, value in x.items() 
+#                                     if key in ep_ellipro})
+#         df.to_pickle('./data/desa_3d_view.pickle')
+#     return df
+
+def filtering_logic(desa: DESA, sort_by:str, hla_class:str, hla:str, donor_type:str):
+    """ This function wraps all the logic pertain to filtering the table """
     if donor_type:
-        ind = df['Donor_Type'].apply(lambda x: x == donor_type)
-        df = df[ind]
-    if ellipro_score:
-        try:
-            df.drop('EpvsHLA_Donor_filt', axis=1)
-        except:
-            pass
-        ind = ep_db['ElliPro Score'].apply(lambda x: x in ellipro_score)
-        ep_ellipro = ep_db[ind].Epitope.values.tolist()
-        df['EpvsHLA_Donor_filt'] = df.EpvsHLA_Donor.apply(lambda x: 
-                        {key:value for key, value in x.items() 
-                                    if key in ep_ellipro})
-        df.to_pickle('./data/desa_3d_view.pickle')
-    return df
+        desa.donor_type(donor_type)
+    if hla_class:
+        desa.hla_class(hla_class)
+    if hla:
+        desa.tx_with_hla(hla)
+    if sort_by:
+        if sort_by == 'early_failure':
+            desa.early_failed(1/4)
+        if sort_by == 'late_surviving':
+            desa.late_failed(10)
+        if sort_by == 'desa':
+            return desa.df.sort_values(by='#DESA', ascending=False)
+    return desa.df
+
 
 def dashtable_data_compatibility(df):
     """ This function helps to make the data compatible to dash table

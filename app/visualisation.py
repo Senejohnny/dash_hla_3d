@@ -1,7 +1,7 @@
 """ This file encompass all the 3D visualisation scripts"""
 import json
 import logging
-from typing import Set, Dict
+from typing import Set, Dict, Union
 from collections import defaultdict
 from dash_bio import Molecule3dViewer
 import dash_bootstrap_components as dbc
@@ -58,10 +58,10 @@ class VisualiseHLA:
             self.log.info(f'Start getting .pdb files for HLA {hla}', extra={'messagePrefix': called_by})
             desa_info['chain'] = get_hla_polychain(hla)
             desa_info['desa'] = {_[0]:_[1] for _ in hlavsep[hla]['_desa']}
-            try:
-                desa_info['desa_rAb'] = set( map(lambda x: int(x[0]), hlavsep[hla]['_desa_rAb']) )
-            except KeyError:
-                desa_info['desa_rAb'] = set()
+            # try:
+            #     desa_info['desa_rAb'] = set( map(lambda x: int(x[0]), hlavsep[hla]['_desa_rAb']) )
+            # except KeyError:
+            #     desa_info['desa_rAb'] = set()
             try:
                 desa_info['desa_mAb'] = set( map(lambda x: int(x[0]), hlavsep[hla]['_desa_mAb']) )
             except KeyError:
@@ -107,7 +107,6 @@ class VisualiseHLA:
     def _hlavsep_poly(
                 self,
                 hlavsep:dict,
-                rAb:bool=False,
                 mAb:bool=False,
                 ) -> dict:
         """ An internal method to get hla vs polymorphic epitopes dictionary from
@@ -121,10 +120,7 @@ class VisualiseHLA:
                 _hlavsep[hla]['_desa'].extend(polymorphic_residues(ep, ep_db))
                 try:
                     ind = ep_db.Epitope == ep
-                    # if rAb & self.epitope.get_epitopes(ep). (ep_db[ind]['AntibodyReactivity'].values[0] == 'Yes'):
-                    #     _hlavsep[hla]['desa_rAb'].append(ep)
-                    #     _hlavsep[hla]['_desa_rAb'].extend(polymorphic_residues(ep, ep_db))
-                    if mAb & (ep_db[ind]['mAb'].values[0] == 'Yes') & (ep_db[ind]['isotype'].values[0] == 'IgG'):
+                    if mAb & (ep_db[ind]['isotype'].values[0] == 'IgG'):
                         _hlavsep[hla]['desa_mAb'].append(ep)
                         _hlavsep[hla]['_desa_mAb'].extend(polymorphic_residues(ep, ep_db))
                 except IndexError:
@@ -137,8 +133,8 @@ class VisualiseHLA:
     def from_epitopes(self,
                     epitopes:set,
                     style:str='sphere',
-                    rAb:bool=False,
                     mAb:bool=False,
+                    elliproscore:Union[set, list, str]=None,
         ) -> Dict[str, set]:
         """
         Prepare 3D visualisation data from epitopes as input. This method finds the
@@ -147,9 +143,16 @@ class VisualiseHLA:
         """
 
         self.log.info(f'Start with Epitopes {epitopes}', extra={'messagePrefix': 'from_epitopes'})
+        if not isinstance(epitopes, set):
+            raise TypeError('Epitopes should be given as a set')
+
+        # filter epitope df (under the hood) by ellipro score
+        if elliproscore:
+            self.epitope.ellipro(elliproscore)
+
         _min_hlavsep = self._get_min_hlavsep(epitopes)
         self.log.info(f'min HLA vs Epitope is:{list(_min_hlavsep.keys())}', extra={'messagePrefix': 'from_epitopes'})
-        hlavspolyep = self._hlavsep_poly(_min_hlavsep, rAb, mAb)
+        hlavspolyep = self._hlavsep_poly(_min_hlavsep, mAb)
         vis_data = self._get_vis_data_from_pdb(hlavspolyep, style, 'from_epitopes')
         self.vis_data_from_epitopes = vis_data
         self.hlavsep = _min_hlavsep
@@ -158,8 +161,8 @@ class VisualiseHLA:
     def from_transplant(self,
                         TxIDs:Set[int],
                         style:str='sphere',
-                        rAb:bool=False,
                         mAb:bool=False,
+                        elliproscore:Union[set, list, str]=None,
         ) -> dict:
         """
         Prepare 3D visualisation data from transplants as input. This method return a dict
@@ -167,21 +170,28 @@ class VisualiseHLA:
             'TxID': {'hla': {'ep'} }
         }
         """
-
         self.log.info(f'Start with TxID {TxIDs}', extra={'messagePrefix': 'from_transplant'})
+         # filter epitope df (under the hood) by ellipro score
+        if elliproscore:
+            self.epitope.ellipro(elliproscore)
+
+
         if not isinstance(TxIDs, set):
             raise TypeError('Transplants should be given as a set')
+
         vis_data = defaultdict(dict)
         txvshlavsep = defaultdict(dict)
 
         for TxID in TxIDs:
-            df_tx = self.desa.get_tx(TxID)
-            epvshla = df_tx.EpvsHLA_Donor.values[0]
+            epvshla = self.desa.get_tx(TxID).EpvsHLA_Donor.values[0]
+            # Apply ellipro filter to epitopes
+            epvshla = {ep:epvshla[ep] for ep in epvshla.keys()
+                                        if ep in set(self.epitope.df.Epitope.values.tolist()) }
             hlavsep = self.epitope.epvshla2hlavsep(epvshla)
             # Keep HLA's for which a pdb file exist
             hlavsep = self._keep_hla_with_pdb(hlavsep)
             txvshlavsep[TxID] = hlavsep
-            hlavspolyep = self._hlavsep_poly(hlavsep, rAb, mAb)
+            hlavspolyep = self._hlavsep_poly(hlavsep, mAb)
             vis_data[TxID] = self._get_vis_data_from_pdb(hlavspolyep, style, 'from_transplants')
 
         self.vis_data_from_transplants = vis_data
@@ -206,7 +216,7 @@ class VisualiseHLA:
 # Front-end visulaisation healper functions
 ####################################################
 
-def vis_cards(vis_object):
+def vis_cards(vis_object: VisualiseHLA):
     """
     This is the visualisation method used in the app. It uses the
     vis_object from VisualiseHLA and based on the object nature
@@ -221,7 +231,7 @@ def vis_cards(vis_object):
         return _vis_card(vis_object)
 
 
-def _vis_card(vis_object, TxID:int=None):
+def _vis_card(vis_object: VisualiseHLA, TxID:int=None):
     """ Front-end card embelishing the visualisation payload in one card"""
 
     if TxID:
@@ -245,7 +255,7 @@ def _vis_card(vis_object, TxID:int=None):
                 , color='secondary', style={'padding': 10}
             )
 
-def vis_payload(vis_object, i, hla, TxID:int=None):
+def vis_payload(vis_object: VisualiseHLA, i, hla, TxID:int=None):
     """
     This methods embelishes and wraps up the visualise3D method in
     VisualiseHLA class and deliver it to v-s_card method
