@@ -33,15 +33,13 @@ class Epitope:
         return self
     
     def is_IgG(self):
-        self.filter_isotype()
+        self.isotype()
         if len(self.df != 0):
             return True
         else:
             return False
 
-
-
-    def filter_isotype(self, isotype:str='IgG'):
+    def isotype(self, isotype:str='IgG'):
         ind = self.df.isotype.apply(lambda x: isotype in x)
         self.df = self.df[ind]
         return self

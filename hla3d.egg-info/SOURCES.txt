@@ -1,5 +1,7 @@
 README.md
 setup.py
+analysis/__init__.py
+analysis/mAb.py
 app/__init__.py
 app/analysis_utils.py
 app/dash_utils.py
@@ -9,8 +11,6 @@ app/pdb_parser.py
 app/pdb_parser_1.py
 app/styles_parser.py
 app/styles_parser_1.py
-app/test_styleparser_1.py
-app/utilities.py
 app/visualisation.py
 app/common/__init__.py
 app/common/logger.py
@@ -23,4 +23,5 @@ app/tests/test_visualisation.py
 hla3d.egg-info/PKG-INFO
 hla3d.egg-info/SOURCES.txt
 hla3d.egg-info/dependency_links.txt
+hla3d.egg-info/requires.txt
 hla3d.egg-info/top_level.txt

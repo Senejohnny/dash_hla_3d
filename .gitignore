@@ -10,3 +10,6 @@ __pycache__/
  .ipynb_checkpoints/
 # Mac/OSX system
 .DS_Store
+
+build
+hla3d.egg-info/
