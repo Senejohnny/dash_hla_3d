@@ -8,6 +8,13 @@ pylint = "*"
 ipykernel = "*"
 hla3d = "*"
 pandas = "*"
+dash = "*"
+dash-daq = "*"
+dash-bootstrap-components = "*"
+pygit2 = "*"
+dash-bio = "*"
+regex = "*"
+parmed = "*"
 
 [dev-packages]
 pytest = "*"
