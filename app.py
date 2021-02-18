@@ -59,7 +59,7 @@ app.layout = dbc.Container([
                 label='Transplants',
                 children=dbc.Row([
                     dbc.Col([
-                        dbc.Tabs(id='tabs-children', 
+                        dbc.Tabs(id='tabs-children',
                             children=[
                                 dbc.Tab(label='About', tab_id='tab-1-1'),
                                 dbc.Tab(label='Data', tab_id='tab-1-2'),
@@ -72,15 +72,15 @@ app.layout = dbc.Container([
                             html.Div(
                                 id='tx-table',
                                 children=[],
-                            )          
+                            )
                         ],
                         width={"size": 8, "order": 2, "offset": 0}
                     ),
-            ])), 
+            ])),
             dbc.Tab(label='Visualise Transplants',
                     children=html.Div([
                         dcc.Loading(
-                            id='3d-view-loading', 
+                            id='3d-view-loading',
                             type="circle",
                         )
                     ]),
@@ -88,7 +88,7 @@ app.layout = dbc.Container([
             dbc.Tab(label='Visualise Epitopes',
                     children=html.Div([
                         dcc.Loading(
-                            id='hla-epitope-3d-view-loading', 
+                            id='hla-epitope-3d-view-loading',
                             type="circle",
                         )
                     ]),
@@ -98,7 +98,7 @@ app.layout = dbc.Container([
 ], fluid=False,)
 # ######################################################################
 # App Layout Pieces
-# ######################################################################  
+# ######################################################################
 show_button =  dbc.Button('Show Table', id='show-table', n_clicks=0)
 sortby_dropdown = [
     html.H6('Sort By'),
@@ -367,4 +367,3 @@ if __name__ == '__main__':
         debug = True
     app.run_server(debug=debug, host = '0.0.0.0', port=8080)
 
-# Error 1272

@@ -56,6 +56,11 @@ class DESA:
         self.df = self.df[ind_t & ind_e]
         return self
 
+    def desa_num(self, num):
+        ind = self.df['#DESA'].apply(lambda x: x == num)
+        self.df = self.df[ind]
+        return self
+
 if __name__ == '__main__':
     desa = DESA()
     print(desa.df.columns)

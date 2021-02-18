@@ -6,6 +6,7 @@ import pandas as pd
 from app.common.logger import logging, get_logger
 from app.common.utilities import (
     get_inventory_hlas,
+    flatten2list,
     flatten2set,
     flatten_dict_values,
 )
@@ -97,6 +98,11 @@ class Epitope:
             hlavsep_dict['Epitope'].append(epitopes)
         self._hlavsep_df = pd.DataFrame(hlavsep_dict)
         return self._hlavsep_df
+
+    def polymorphic_residues(self, epitope:str) -> set:
+        """ Gets the aminoacide sequence of one epitope from
+        the polymorphic residue column """
+        return self.df[self.df.Epitope == epitope].PolymorphicResidues.values[0]
 
     def min_hlavsep(self, epitopes:set, ignore_hla:set=set()) -> dict:
         """ Returns the HLA vs epitope dictionary

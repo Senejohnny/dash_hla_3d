@@ -13,7 +13,6 @@ from app.desa import DESA
 from app import styles_parser as sparser, pdb_parser as parser
 from app.common.utilities import (
     get_hla_polychain,
-    polymorphic_residues,
     hla_to_filename,
     find_molecule_path,
 )
@@ -117,12 +116,12 @@ class VisualiseHLA:
         for hla in hlavsep.keys():
             for ep in hlavsep[hla]:
                 _hlavsep[hla]['desa'].append(ep)
-                _hlavsep[hla]['_desa'].extend(polymorphic_residues(ep, ep_db))
+                _hlavsep[hla]['_desa'].extend(self.epitope.polymorphic_residues(ep))
                 try:
                     ind = ep_db.Epitope == ep
                     if mAb & (ep_db[ind]['isotype'].values[0] == 'IgG'):
                         _hlavsep[hla]['desa_mAb'].append(ep)
-                        _hlavsep[hla]['_desa_mAb'].extend(polymorphic_residues(ep, ep_db))
+                        _hlavsep[hla]['_desa_mAb'].extend(self.epitope.polymorphic_residues(ep))
                 except IndexError:
                     self.log.warning(
                         f'Epitope {ep} from HLA {hla} does not exist in the epitope database',
@@ -151,8 +150,10 @@ class VisualiseHLA:
             self.epitope.ellipro(elliproscore)
 
         _min_hlavsep = self._get_min_hlavsep(epitopes)
+        print('_min_hlavsep', _min_hlavsep)
         self.log.info(f'min HLA vs Epitope is:{list(_min_hlavsep.keys())}', extra={'messagePrefix': 'from_epitopes'})
         hlavspolyep = self._hlavsep_poly(_min_hlavsep, mAb)
+        print('hlavspolyep', hlavspolyep)
         vis_data = self._get_vis_data_from_pdb(hlavspolyep, style, 'from_epitopes')
         self.vis_data_from_epitopes = vis_data
         self.hlavsep = _min_hlavsep
