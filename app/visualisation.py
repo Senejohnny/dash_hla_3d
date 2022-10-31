@@ -12,6 +12,7 @@ from app.epitope import Epitope
 from app.desa import DESA
 from app import styles_parser as sparser, pdb_parser as parser
 from app.common.utilities import (
+    get_hla_exp,
     get_hla_polychain,
     hla_to_filename,
     find_molecule_path,
@@ -30,7 +31,7 @@ class VisualiseHLA:
         self.hlavsep = None
         self.txvshlavsep = None
         self.vis_data_from_transplants = None
-        
+
 
     @staticmethod
     def _molecule_viewer(model:dict, style:dict, opacity=0):
@@ -43,7 +44,7 @@ class VisualiseHLA:
             backgroundOpacity=str(opacity),
             atomLabelsShown=False,
             )
-        
+
     def _get_vis_data_from_pdb(self, hlavsep:dict, style, called_by)-> Dict[str, Dict[str, list]]:
         """
         Extract visualisation data like model & style from pdb file and construct a
@@ -84,10 +85,10 @@ class VisualiseHLA:
                 continue
         return vis_data
 
-    def _get_min_hlavsep(self, epitopes:set) -> dict:
+    def _get_min_hlavsep(self, epitopes:set, most_freq_hla:bool=True) -> dict:
         if not isinstance(epitopes, set):
             raise TypeError('Epitopes should be given as a set')
-        return self.epitope.min_hlavsep(epitopes, ignore_hla=self.ignore_hla)
+        return self.epitope.min_hlavsep(epitopes, ignore_hla=self.ignore_hla, most_freq_hla=most_freq_hla)
 
     def _keep_hla_with_pdb(self, hlavsep:dict) -> dict:
         """
@@ -150,15 +151,13 @@ class VisualiseHLA:
             self.epitope.ellipro(elliproscore)
 
         _min_hlavsep = self._get_min_hlavsep(epitopes)
-        print('_min_hlavsep', _min_hlavsep)
         self.log.info(f'min HLA vs Epitope is:{list(_min_hlavsep.keys())}', extra={'messagePrefix': 'from_epitopes'})
         hlavspolyep = self._hlavsep_poly(_min_hlavsep, mAb)
-        print('hlavspolyep', hlavspolyep)
         vis_data = self._get_vis_data_from_pdb(hlavspolyep, style, 'from_epitopes')
         self.vis_data_from_epitopes = vis_data
         self.hlavsep = _min_hlavsep
         return self
-    
+
     def from_transplant(self,
                         TxIDs:Set[int],
                         style:str='sphere',
@@ -214,7 +213,7 @@ class VisualiseHLA:
         return self._molecule_viewer(model_data, style_data, opacity=0.6)
 
 ####################################################
-# Front-end visulaisation healper functions
+# Front-end visualisation helper functions
 ####################################################
 
 def vis_cards(vis_object: VisualiseHLA):
@@ -233,7 +232,7 @@ def vis_cards(vis_object: VisualiseHLA):
 
 
 def _vis_card(vis_object: VisualiseHLA, TxID:int=None):
-    """ Front-end card embelishing the visualisation payload in one card"""
+    """ Front-end card embellishing the visualisation payload in one card """
 
     if TxID:
         card_header = dbc.CardHeader(
@@ -258,18 +257,20 @@ def _vis_card(vis_object: VisualiseHLA, TxID:int=None):
 
 def vis_payload(vis_object: VisualiseHLA, i, hla, TxID:int=None):
     """
-    This methods embelishes and wraps up the visualise3D method in
-    VisualiseHLA class and deliver it to v-s_card method
+    This methods embellishes and wraps up the visualise3D method in
+    VisualiseHLA class and deliver it to vis_card method
     """
-
     hlavsep = vis_object.txvshlavsep[TxID] if TxID else vis_object.hlavsep
     return [
             html.H6(
-                    html.Span(f'{hla}',
-                        id=f"tooltip-target-{TxID}-{i}",
-                        style={"textDecoration": "underline", "cursor": "pointer"},
-                        className="card-subtitle",
-                    )
+                    [
+                        html.Span(f'{hla}',
+                            id=f"tooltip-target-{TxID}-{i}",
+                            style={"textDecoration": "underline", "cursor": "pointer"},
+                            className="card-subtitle",
+                        ),
+                        # f" [Exp:{get_hla_exp(hla)}]"
+                    ]
             ),
             dbc.Tooltip(
                 f"DESA #{len(hlavsep[hla])}: {hlavsep[hla]}",

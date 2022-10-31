@@ -153,6 +153,13 @@ ellipro_score = [
                 multi=True,
     ),
 ]
+# exclude_nev = daq.BooleanSwitch(        # pylint: disable=not-callable
+#                 id='exclude-nev-switch',
+#                 on=False,
+#                 label="Exclude Never Functioning Grafts",
+#                 labelPosition="top",
+#             )
+
 filter_card = dbc.Card(
     [
         dbc.CardHeader(html.H5('Data Base',  className="card-title")),
@@ -174,7 +181,13 @@ filter_card = dbc.Card(
                         dbc.Col(hla_class,  style={'padding':5}),
                         dbc.Col(hla_molecule,  style={'padding':5})
                     ]
-                )
+                ),
+                # dbc.Row(
+                #     [
+                #         dbc.Col(exclude_nev,  style={'padding':5}),
+
+                #     ]
+                # )
             ]
         )
     ]
@@ -263,7 +276,7 @@ tab_2_layout = html.Div(
         dbc.Row(filter_card, className="w-75 mb-4"),
         dbc.Row(Tx_vis_card, className="w-75 mb-4"),
         # dbc.Row(ep_vis_card, className="w-75 mb-4")
-    ]    
+    ]
 )
 
 # ######################################################################
@@ -278,10 +291,10 @@ def render_content(tab):
                     dbc.CardBody(
                         html.P("""
                         HLA-Epitope 3D is a visualizer that allows you to view the epitopes on HLA molecules
-                        with multiple representations: sticks, spheres, and cartoons and color code for 
-                        epitopes that are recognised by reactive and human monoclonal antibodies. 
-                        You can search and filter the Procare database for all the HLA epitopes to which 
-                        antibody can bind.  
+                        with multiple representations: sticks, spheres, and cartoons and color code for
+                        epitopes that are recognised by reactive and human monoclonal antibodies.
+                        You can search and filter the Procare database for all the HLA epitopes to which
+                        antibody can bind.
                         """)
                     )
                 ], style={"width": "4"})
@@ -304,10 +317,10 @@ def table(n_clicks, sort_by, hla_class, hla, donor_type):
     if n_clicks == 0:
         return html.P('Click on "Show Table" button to see the table'), None
     desa = DESA()
-    desa_df = filtering_logic(desa, sort_by, hla_class, hla, donor_type)
+    desa_df = filtering_logic(desa, sort_by, hla_class, hla, donor_type, None)
     desa_df = dashtable_data_compatibility(desa_df)
     return dbc.Table.from_dataframe(
-        desa_df, 
+        desa_df,
         bordered=True,
         dark=True,
         hover=True,

@@ -1,4 +1,13 @@
 {
     "python.pythonPath": "/Users/Danial/.local/share/virtualenvs/dash_hla_3d-ZSEserBq/bin/python",
-    "jupyter.jupyterServerType": "local"
+    "jupyter.jupyterServerType": "local",
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
+    ],
+    "python.linting.pylintEnabled": true
 }

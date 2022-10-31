@@ -1,7 +1,5 @@
 README.md
 setup.py
-analysis/__init__.py
-analysis/mAb.py
 app/__init__.py
 app/analysis_utils.py
 app/dash_utils.py
@@ -16,7 +14,6 @@ app/common/__init__.py
 app/common/logger.py
 app/common/test_utilities.py
 app/common/utilities.py
-app/components/__init__.py
 app/tests/__init__.py
 app/tests/test_epitope.py
 app/tests/test_visualisation.py

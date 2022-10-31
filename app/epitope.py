@@ -35,12 +35,12 @@ class Epitope:
         for epitope, hla in epvshla.items():
             hlavsep[hla].add(epitope)
         return hlavsep
-    
+
     def filter_mAb(self):
         ind = self.df.mAb == 'Yes'
         self.df = self.df[ind]
         return self
-    
+
     def is_IgG(self):
         self.isotype()
         if len(self.df != 0):
@@ -72,24 +72,24 @@ class Epitope:
             ind = self.df['ElliPro Score'].apply(lambda x: x in value)
         self.df = self.df[ind]
         return self
-    
+
     def hlavsep(self,
                 hla_allel:str='Luminex Alleles',
                 only_with_pdb:bool=False,
                 ignore_hla:set =set()) -> pd.DataFrame:
         """ returns a DataFrame of HLA vs epitoes
         hla_allel [default is 'Luminex Alleles']: determines the allel type
-        only_with_pdb [default is False]: If True, includes only luminex allels that pdb file 
+        only_with_pdb [default is False]: If True, includes only luminex allels that pdb file
         is available:
         only_with_pdb: Include only Luminex Alleles that pdb file is available
         { 'HLA' : {'epitopes'}} """
-        
+
         if only_with_pdb:
             # Luminex Alleles with available pdb files
             hlas = flatten2set(self.df[hla_allel].values).intersection(self.pdb_inventory) - ignore_hla
         else:
             hlas = flatten2set(self.df[hla_allel].values)
-        
+
         hlavsep_dict = defaultdict(list)
         for hla in hlas:
             ind = self.df[hla_allel].apply(lambda x: hla in x)
@@ -104,7 +104,7 @@ class Epitope:
         the polymorphic residue column """
         return self.df[self.df.Epitope == epitope].PolymorphicResidues.values[0]
 
-    def min_hlavsep(self, epitopes:set, ignore_hla:set=set()) -> dict:
+    def min_hlavsep(self, epitopes:set, ignore_hla:set=set(), most_freq_hla:bool=False) -> dict:
         """ Returns the HLA vs epitope dictionary
             based on minimum number of HLA possible
             ignore_hla: ignores some hla
@@ -113,6 +113,15 @@ class Epitope:
         # Deep copy of epitopes set for later epitope removal
         _epitopes = epitopes.copy()
         hlavsep_df = self.hlavsep(only_with_pdb=True, ignore_hla=ignore_hla)
+        if most_freq_hla:
+            freq_hla = {
+                'A*02:01', 'A*01:01', 'A*03:01', #'A*24:02', 'A*11:01', 'A*68:01', 'A*31:01', 'A*32:01', 'A*26:01', 'A*29:02',
+                'B*07:02', 'B*08:01', 'B*15:01', #'B*44:02', 'B*40:01', 'B*35:01', 'B*51:01', 'B*44:03', 'B*57:01', 'B*18:01',
+                'DRB1*15:01', 'DRB1*03:01', 'DRB1*01:01', #'DRB1*07:01', 'DRB1*04:01', 'DRB1*13:01', 'DRB1*11:01', 'DRB1*13:02', 'DRB1*04:04', 'DRB1*14:54',
+                'DQB1*03:01', 'DQB1*06:02', 'DQB1*02:01', #'DQB1*05:01', 'DQB1*03:02', 'DQB1*02:02', 'DQB1*06:03', 'DQB1*06:04', 'DQB1*03:03', 'DQB1*05:03',
+            }
+            hlavsep_df = hlavsep_df[hlavsep_df['HLA'].apply(lambda x: x in freq_hla)]
+            print(hlavsep_df.info())
         hla_ep = defaultdict(set)
         for _ in range(10):
             intersect = hlavsep_df.Epitope.apply(
@@ -148,7 +157,7 @@ if __name__ == '__main__':
 #     epitopes = set(['105S', '113HN', '114H', '114Q', '116L', '131S', '144QL',
 #                     '44RME', '62EE', '62QE', '63NI', '65QIA', '66IS', '66IY',
 #                     '66NH', '70IAQ', '71TD', '74Y', '77D','99S', '9H'])
-                    
+
 #     hlavsep = epitope.min_hlavsep(epitopes, ignore_hla=set(['B*13:01', 'B*13:02']))
 #     for key in hlavsep.__iter__():
 #         hlavsep[key] = str(hlavsep[key])

@@ -1,15 +1,16 @@
 """ Some utility functions """
 import os
 from collections import defaultdict
+import pandas as pd
 import regex as re
 # from typing import Set
 
 def flatten2list(object):
-    """ This function flattens objects in a nested structure and retu"""
+    """ This function flattens objects in a nested structure and return """
     gather = []
     for item in object:
         if isinstance(item, (list, set)):
-            gather.extend(flatten2list(item))            
+            gather.extend(flatten2list(item))
         else:
             gather.append(item)
     return gather
@@ -42,18 +43,18 @@ def polymorphic_residues(epitope_set:set, epitope_db) -> set:
     ind = epitope_db.Epitope.apply(lambda x: x in epitope_set)
     poly_residues = epitope_db[ind].PolymorphicResidues.values
     return flatten2list(poly_residues)
-    
+
 def hla_to_filename(hla:str):
-    """ Translates the hla to the pertinant .pdb file name in the repo """
+    """ Translates the hla to the pertinent .pdb file name in the repo """
     locus, specificity = hla.split('*')
     filename = '_'.join([locus, *specificity.split(':')]) + '_V1.pdb'
     return re.split('\d', locus)[0], filename
 
 
 def find_molecule_path(locus:str, filename:str) -> str:
-    """This function makes use of the locus and filename resulted from 
+    """This function makes use of the locus and filename resulted from
     'hla_to_filename' function to find the path to the relevant file .pdb file """
-    
+
     path = os.path.expanduser(f'./data/HLAMolecule/{locus[0:2]}') # get until the first 2 character of locus if exist
     pdb_files = [file for file in os.listdir(path) if filename.split('_V1.pdb')[0] in file ]
     if len(pdb_files) != 0:
@@ -62,9 +63,9 @@ def find_molecule_path(locus:str, filename:str) -> str:
         return  False, 'No path exists'
 
 def dict_depth(my_dict):
-    """ function to find the depth of dictionary """ 
-    
-    if isinstance(my_dict, dict): 
+    """ function to find the depth of dictionary """
+
+    if isinstance(my_dict, dict):
         return 1 + (max(map(dict_depth, my_dict.values() )) if my_dict else 0 )
     return 0
 
@@ -76,6 +77,27 @@ def get_hla_from_filename(filename: str):
         split = split.split('_')
         hla_set.add(split[0] + '*' + ':'.join(split[1:3]))
     return hla_set
+
+def get_hla_class(hla:str):
+    """ get hla class from high resolution typing """
+    if hla.split('*')[0] in ['A', 'B', 'C']:
+        return 'I'
+    return 'II'
+
+def get_class(x):
+    """ get hla class """
+    _class = {get_hla_class(hla) for hla in set(x.values())}
+    return ','.join(list(_class))
+
+def get_hla_exp(hla:str):
+    """ This method carries hla expression database. It returns the hla expression
+    in terms of Normalized Read [Log 2] based on paper https://doi.org/10.3389/fimmu.2020.00941 """
+    hla_exp_df = pd.read_pickle('./data/hla_expression/hla_expression.pickle')
+    try:
+        expression = hla_exp_df[hla_exp_df.HLA == hla]['Normalized Read [Log 2]'].values[0]
+        return expression
+    except IndexError:
+        return None
 
 def get_inventory_hlas(base_dir: str) -> dict:
     """ This function returns all the hla & locus

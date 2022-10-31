@@ -1,12 +1,12 @@
 """ DESA class """
 import pandas as pd
-# from app.epitope import Epitope 
+# from app.epitope import Epitope
 
 class DESA:
     """ This is a class that entails the data base [Pandas DataFrame] of all transplants
         with DESA and all the related methods that can be applied or update this DataFrame """
-    
-    def __init__(self, path:str='./data/desa_3d_view.pickle'):
+
+    def __init__(self, path:str='./data/desa_3d_view2.pickle'):
         self.df = pd.read_pickle(path)
 
     def __repr__(self):
@@ -17,10 +17,15 @@ class DESA:
 
     def donor_type(self, donor_type:str='Deceased'):
         if donor_type not in ['Living', 'Deceased']:
-            raise KeyError(f"""{donor_type} does not exist in the df values, 
+            raise KeyError(f"""{donor_type} does not exist in the df values,
                             accepted values: {self.df.Donor_Type.unique()}""")
-        ind = self.df.Donor_Type.apply(lambda x: x == donor_type)                          
+        ind = self.df.Donor_Type.apply(lambda x: x == donor_type)
         self.df = self.df[ind]
+        return self
+
+    def graft_function(self, exclude='NEV'):
+        self.df = self.df[self.df.Graft_Func != exclude]
+        self.df = self.df[self.df['Survival[Y]'] != 0]
         return self
 
     def get_tx(self, TxID:int) -> pd.DataFrame:
@@ -63,6 +68,8 @@ class DESA:
 
 if __name__ == '__main__':
     desa = DESA()
+    print(desa.df)
+
+
     print(desa.df.columns)
-    print(desa.df.EpvsHLA_Donor)
-# print('getcwd:      ', os.getcwd())
+
