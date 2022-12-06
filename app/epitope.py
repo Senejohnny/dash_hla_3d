@@ -121,7 +121,6 @@ class Epitope:
                 'DQB1*03:01', 'DQB1*06:02', 'DQB1*02:01', #'DQB1*05:01', 'DQB1*03:02', 'DQB1*02:02', 'DQB1*06:03', 'DQB1*06:04', 'DQB1*03:03', 'DQB1*05:03',
             }
             hlavsep_df = hlavsep_df[hlavsep_df['HLA'].apply(lambda x: x in freq_hla)]
-            print(hlavsep_df.info())
         hla_ep = defaultdict(set)
         for _ in range(10):
             intersect = hlavsep_df.Epitope.apply(
@@ -143,25 +142,3 @@ class Epitope:
                 extra={'messagePrefix': 'Epitope.min_hlavsep'}
             )
         return dict(hla_ep)
-
-
-if __name__ == '__main__':
-    import sys
-    import os
-    import json
-    # print(sys.path)
-    epitope = Epitope()
-    print(epitope.filter_mAb().filter_isotype().df)
-#     basepath = os.path.expanduser('./data/HLAMolecule')
-#     # print('base path is as follow', basepath)
-#     epitopes = set(['105S', '113HN', '114H', '114Q', '116L', '131S', '144QL',
-#                     '44RME', '62EE', '62QE', '63NI', '65QIA', '66IS', '66IY',
-#                     '66NH', '70IAQ', '71TD', '74Y', '77D','99S', '9H'])
-
-#     hlavsep = epitope.min_hlavsep(epitopes, ignore_hla=set(['B*13:01', 'B*13:02']))
-#     for key in hlavsep.__iter__():
-#         hlavsep[key] = str(hlavsep[key])
-#     json_obj = json.dumps(hlavsep, indent=4)
-#     print(json_obj)
-# print(epitope.df)
-
